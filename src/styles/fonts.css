@@ -1,0 +1,35 @@
+/*
+ * Mobile safe-area utilities
+ *
+ * These classes apply only below the md breakpoint (< 768px) so they never
+ * conflict with desktop layout.  Using a stylesheet rather than inline styles
+ * keeps safe-area-inset values responsive and avoids the specificity issue of
+ * inline styles overriding Tailwind responsive modifiers.
+ */
+@media (max-width: 767px) {
+  /* Bottom-padding for pages whose scroll lives in <main>
+     (Home, Occasions, Plans, People, Reminders, About Me, Person Detail,
+     Occasion Detail).  Accounts for: tab-bar height (~52 px) + 20 px gap +
+     device safe-area (home indicator on iPhone). */
+  .mobile-scroll-pb {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Bottom-padding for pages that manage their own inner scroll
+     (OccasionsIndex, PlansIndex) — main's pb never reaches them. */
+  .mobile-inner-scroll-pb {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Bottom tab nav: pushes the bar itself up by the home-indicator height so
+     the last tab label is never flush against the screen edge. */
+  .mobile-nav-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Bottom sheet item list: adds clearance at the bottom of sheet content so
+     the last row isn't behind the home indicator. */
+  .mobile-sheet-pb {
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
