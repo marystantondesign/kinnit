@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { PersonPicker } from "../components/PersonPicker";
+import { logReminderActivity } from "../utils/notificationStore";
 
 const TIMING_OPTIONS = [
   { value: "day-of",      label: "Day of" },
@@ -29,6 +30,7 @@ export function CreateReminder() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // In production this would persist the reminder; for now navigate back.
+    if (action.trim()) logReminderActivity("Added", action.trim());
     navigate("/app/reminders");
   };
 

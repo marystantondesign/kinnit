@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { DayPicker, type DateRange } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { saveOccasion, getOccasion, type OccasionData } from "../utils/occasionStorage";
+import { logActivity } from "../utils/notificationStore";
 import { getAllPlans, getPlan } from "../utils/planStorage";
 import { linkPlanToOccasion, removePlanFromOccasion } from "../utils/linkingUtils";
 
@@ -369,6 +370,7 @@ const allPlans = getAllPlans();
     };
     
     saveOccasion(occasionData);
+    logActivity("occasion", `${existingOccasion ? "Updated" : "Added"} ${occasionData.title}`);
     
     // Update each linked plan to reference this occasion (many-to-many)
     linkedPlans.forEach(plan => {

@@ -14,6 +14,7 @@ import {
   LogOut,
   Home,
 } from "lucide-react";
+import { NotificationsBell } from "../components/notifications/NotificationsBell";
 
 // ─── Search data ─────────────────────────────────────────────────────────────
 
@@ -295,14 +296,18 @@ export function MainLayout() {
             Kinnit
           </Link>
 
-          {/* Avatar — navigates to About Me */}
-          <Link
-            to="/app/about-me"
-            aria-label="About Me"
-            className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground select-none hover:opacity-80 transition-opacity"
-          >
-            MS
-          </Link>
+          <div className="flex items-center gap-2">
+            <NotificationsBell />
+
+            {/* Avatar — navigates to About Me */}
+            <Link
+              to="/app/about-me"
+              aria-label="About Me"
+              className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground select-none hover:opacity-80 transition-opacity"
+            >
+              MS
+            </Link>
+          </div>
         </div>
 
         {/* ── Desktop top bar (≥ md) ─────────────────────────────────────── */}
@@ -371,6 +376,9 @@ export function MainLayout() {
               <SearchDropdown results={results} onClose={clearSearch} />
             )}
           </div>
+
+          {/* Notifications bell — directly left of the avatar */}
+          <NotificationsBell />
 
           {/* Profile: avatar (Link → About Me) + chevron (button → dropdown) */}
           <div className="relative flex-shrink-0 flex items-center gap-1" ref={profileRef}>

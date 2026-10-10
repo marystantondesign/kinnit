@@ -53,6 +53,7 @@ const mockParticipants: Record<string, Participant> = {
   sarah: { id: "1", name: "Sarah Johnson", initials: "SJ" },
   michael: { id: "2", name: "Michael Chen", initials: "MC" },
   emma: { id: "3", name: "Emma Davis", initials: "ED" },
+  emily: { id: "7", name: "Emily Parker", initials: "EP" },
 };
 
 // Mock data - in a real app, this would come from a database
@@ -89,6 +90,16 @@ const mockPlans: Record<string, PlanData> = {
     planFor: "Group",
     participants: [mockParticipants.you, mockParticipants.michael, mockParticipants.sarah, mockParticipants.emma],
     organizers: [mockParticipants.michael, mockParticipants.you],
+  },
+  "weekend-crew": {
+    id: "weekend-crew",
+    title: "Weekend crew",
+    description: "Emily's standing weekend hangouts — brunch, hikes, and whatever comes up.",
+    status: "active",
+    leader: mockParticipants.emily,
+    planFor: "Group",
+    participants: [mockParticipants.emily, mockParticipants.sarah, mockParticipants.you],
+    organizers: [mockParticipants.emily],
   },
 };
 
