@@ -2,7 +2,6 @@ import {
   createContext,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -12,6 +11,7 @@ import {
   Check,
   Info,
   Link2,
+  Loader2,
   Lock,
   Mic,
   Minus,
@@ -24,8 +24,10 @@ import {
   X,
 } from "lucide-react";
 import { getEntityAppearance, type EntityKind } from "../../utils/entityAppearance";
-import { parseConversation, type DraftItem, type DraftType } from "../../utils/voiceParser";
+import { parseTranscript, toISODate, type DraftItem } from "../../utils/talkClient";
 import { commitDraftItems } from "../../utils/voiceActions";
+import { PEOPLE_DIRECTORY, displayName } from "../../utils/peopleDirectory";
+import type { TalkItem, TalkPerson } from "../../../shared/talk";
 import { useSpeechCapture, type CaptureStatus } from "./useSpeechCapture";
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -49,16 +51,26 @@ interface Message {
   at: Date;
 }
 
+/** What the user changed on a card; applied on top of the parsed item. */
 interface ItemOverride {
   checked?: boolean;
   deleted?: boolean;
   title?: string;
+  detail?: string | null;
   date?: string;
+  invite?: boolean;
+  people?: TalkPerson[];
+}
+
+interface ParseState {
+  loading: boolean;
+  items: DraftItem[];
+  error: string | null;
 }
 
 type Phase = "listening" | "review";
 
-const KIND_FOR: Record<DraftType, EntityKind> = {
+const KIND_FOR: Record<TalkItem["type"], EntityKind> = {
   occasion: "occasion",
   reminder: "reminder",
   plan: "plan",
@@ -66,11 +78,14 @@ const KIND_FOR: Record<DraftType, EntityKind> = {
 };
 
 function typeLabel(item: DraftItem) {
-  if (item.type === "note") return `Note about ${item.people[0]?.name ?? "someone"}`;
+  if (item.type === "note") {
+    const about = item.people.find((p) => p.role === "about") ?? item.people[0];
+    return `Note about ${about ? displayName(about.name) : "someone"}`;
+  }
   return item.type.charAt(0).toUpperCase() + item.type.slice(1);
 }
 
-function formatDate(iso?: string) {
+function formatDate(iso?: string | null) {
   if (!iso) return "No date";
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString("en-US", {
@@ -88,6 +103,26 @@ function formatTime(d: Date) {
 function joinNames(names: string[]) {
   if (names.length <= 1) return names[0] ?? "";
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+/** Items other than notes need a date before they can be added. */
+function needsDate(item: DraftItem) {
+  return item.type !== "note" && !item.date;
+}
+
+/** People on a plan who can get an invitation (in People, doing it with the user). */
+function invitees(item: DraftItem) {
+  return item.type === "plan" ? item.people.filter((p) => p.role === "with" && p.inPeople) : [];
+}
+
+function quickDate(choice: "today" | "tomorrow" | "weekend"): string {
+  const d = new Date();
+  if (choice === "tomorrow") d.setDate(d.getDate() + 1);
+  if (choice === "weekend") {
+    const dow = d.getDay(); // Saturday of this weekend; Sunday stays Sunday
+    if (dow !== 0) d.setDate(d.getDate() + (6 - dow));
+  }
+  return toISODate(d);
 }
 
 function useIsDesktop() {
@@ -111,17 +146,47 @@ export function TalkToKinnitProvider({ children }: { children: ReactNode }) {
   const [phase, setPhase] = useState<Phase>("listening");
   const [messages, setMessages] = useState<Message[]>([]);
   const [overrides, setOverrides] = useState<Record<string, ItemOverride>>({});
+  const [parse, setParse] = useState<ParseState>({ loading: false, items: [], error: null });
 
-  const drafts = useMemo(() => parseConversation(messages.map((m) => m.text)), [messages]);
-  const visible = drafts
+  // Re-read the whole conversation whenever it changes.
+  useEffect(() => {
+    if (!messages.length) {
+      setParse({ loading: false, items: [], error: null });
+      return;
+    }
+    const controller = new AbortController();
+    setParse((prev) => ({ ...prev, loading: true, error: null }));
+    parseTranscript(messages.map((m) => m.text), controller.signal)
+      .then((result) => {
+        if (result.ok && result.items.length) {
+          setParse({ loading: false, items: result.items, error: null });
+        } else {
+          if (!result.ok) console.warn("Talk to Kinnit: parse failed:", result.error);
+          setParse({ loading: false, items: [], error: result.ok ? "nothing_found" : result.error });
+        }
+      })
+      .catch((error) => {
+        if ((error as Error).name !== "AbortError") setParse({ loading: false, items: [], error: "network" });
+      });
+    return () => controller.abort();
+  }, [messages]);
+
+  const visible: DraftItem[] = parse.items
     .filter((d) => !overrides[d.key]?.deleted)
-    .map((d) => ({
-      ...d,
-      title: overrides[d.key]?.title ?? d.title,
-      date: overrides[d.key]?.date ?? d.date,
-    }));
+    .map((d) => {
+      const o = overrides[d.key] ?? {};
+      return {
+        ...d,
+        title: o.title ?? d.title,
+        detail: o.detail !== undefined ? o.detail : d.detail,
+        date: o.date ?? d.date,
+        people: o.people ?? d.people,
+      };
+    });
   const isChecked = (key: string) => overrides[key]?.checked !== false;
+  const inviteChoice = (item: DraftItem) => overrides[item.key]?.invite ?? item.invite;
   const selected = visible.filter((d) => isChecked(d.key));
+  const incomplete = selected.filter(needsDate);
 
   const reset = () => {
     capture.stop();
@@ -148,6 +213,12 @@ export function TalkToKinnitProvider({ children }: { children: ReactNode }) {
     if (t) setMessages((prev) => [...prev, { text: t, at: new Date() }]);
   };
 
+  /** Replaces the conversation with an edited version (after a failed read). */
+  const replaceConversation = (text: string) => {
+    const t = text.trim();
+    if (t) setMessages([{ text: t, at: messages[0]?.at ?? new Date() }]);
+  };
+
   const finishListening = (typed?: string) => {
     const spoken = capture.stop();
     addMessage(typed ?? spoken);
@@ -163,7 +234,8 @@ export function TalkToKinnitProvider({ children }: { children: ReactNode }) {
     setOverrides((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
 
   const addSelected = () => {
-    commitDraftItems(selected);
+    if (incomplete.length || parse.loading) return;
+    commitDraftItems(selected.map((item) => ({ ...item, sendInvites: inviteChoice(item) })));
     reset();
   };
 
@@ -182,15 +254,19 @@ export function TalkToKinnitProvider({ children }: { children: ReactNode }) {
           onStop={() => finishListening()}
           onSubmitTyped={(text) => finishListening(text)}
           messages={messages}
+          parse={parse}
           items={visible}
           isChecked={isChecked}
+          inviteChoice={inviteChoice}
           selectedCount={selected.length}
+          incomplete={incomplete}
           onToggle={(key) => updateOverride(key, { checked: !isChecked(key) })}
-          onEdit={(key, patch) => updateOverride(key, patch)}
+          onPatch={(key, patch) => updateOverride(key, patch)}
           onDelete={(key) => updateOverride(key, { deleted: true })}
           onAdd={addSelected}
           onCancel={reset}
           onTellMore={addMessage}
+          onRetry={replaceConversation}
           onListenAgain={listenAgain}
           onMinimize={() => setMinimized(true)}
           onClose={reset}
@@ -216,15 +292,19 @@ interface PanelProps {
   onStop: () => void;
   onSubmitTyped: (text: string) => void;
   messages: Message[];
+  parse: ParseState;
   items: DraftItem[];
   isChecked: (key: string) => boolean;
+  inviteChoice: (item: DraftItem) => boolean;
   selectedCount: number;
+  incomplete: DraftItem[];
   onToggle: (key: string) => void;
-  onEdit: (key: string, patch: ItemOverride) => void;
+  onPatch: (key: string, patch: ItemOverride) => void;
   onDelete: (key: string) => void;
   onAdd: () => void;
   onCancel: () => void;
   onTellMore: (text: string) => void;
+  onRetry: (text: string) => void;
   onListenAgain: () => void;
   onMinimize: () => void;
   onClose: () => void;
@@ -505,21 +585,41 @@ function InfoLine() {
 
 // ─── Review ───────────────────────────────────────────────────────────────────
 
+const COULDNT_PARSE = "I couldn't pick anything out of that. Try rephrasing, or edit the text.";
+
+function incompleteMessage(incomplete: DraftItem[]) {
+  if (incomplete.length === 1) return `Choose a date for the ${incomplete[0].type} to continue.`;
+  return `Choose dates for ${incomplete.length} items to continue.`;
+}
+
 function ReviewView({
   messages,
+  parse,
   items,
   isChecked,
+  inviteChoice,
   selectedCount,
+  incomplete,
   onToggle,
-  onEdit,
+  onPatch,
   onDelete,
   onAdd,
   onCancel,
   onTellMore,
+  onRetry,
   onListenAgain,
   isDesktop,
 }: PanelProps & { isDesktop: boolean }) {
   const [more, setMore] = useState("");
+  const [retryText, setRetryText] = useState("");
+  const failed = !parse.loading && parse.error !== null;
+
+  // Prefill the edit box with what was said whenever a read fails.
+  useEffect(() => {
+    if (failed) setRetryText(messages.map((m) => m.text).join(" "));
+  }, [failed, messages]);
+
+  const addDisabled = selectedCount === 0 || incomplete.length > 0 || parse.loading;
 
   return (
     <div>
@@ -534,49 +634,93 @@ function ReviewView({
         ))}
       </div>
 
-      <h3 className="mt-6 text-lg font-semibold text-gray-900">Here's what I picked up</h3>
-      <p className="text-sm text-gray-500">Nothing is saved until you confirm.</p>
-
-      <div className="mt-3 space-y-2.5">
-        {items.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-200 px-4 py-6 text-center">
-            <p className="text-sm text-gray-900">I didn't catch anything to add yet.</p>
-            <p className="text-[13px] text-gray-500 mt-1">
-              Try something like "Remind me to call Mom on Sunday."
-            </p>
+      {failed ? (
+        <div className="mt-6">
+          <p className="text-[15px] text-gray-900">{COULDNT_PARSE}</p>
+          <textarea
+            value={retryText}
+            onChange={(e) => setRetryText(e.target.value)}
+            rows={4}
+            aria-label="Edit what you said"
+            className="mt-3 w-full rounded-xl border border-gray-200 p-4 text-[15px] leading-6 text-gray-900 resize-none focus:outline-none focus:border-gray-400"
+          />
+          <div className="mt-3 flex gap-3">
+            <button
+              type="button"
+              onClick={() => onRetry(retryText)}
+              disabled={!retryText.trim()}
+              className="flex-1 h-12 rounded-xl bg-gray-900 text-white text-[15px] font-medium hover:bg-gray-800 disabled:opacity-40 transition-colors"
+            >
+              Try again
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-6 h-12 rounded-xl border border-gray-200 bg-white text-[15px] text-gray-900 hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
           </div>
-        ) : (
-          items.map((item) => (
-            <DraftCard
-              key={item.key}
-              item={item}
-              checked={isChecked(item.key)}
-              showDelete={isDesktop}
-              onToggle={() => onToggle(item.key)}
-              onEdit={(patch) => onEdit(item.key, patch)}
-              onDelete={() => onDelete(item.key)}
-            />
-          ))
-        )}
-      </div>
+        </div>
+      ) : (
+        <>
+          <div className="mt-6 flex items-baseline justify-between gap-3">
+            <h3 className="text-lg font-semibold text-gray-900">Here's what I picked up</h3>
+            {parse.loading && items.length > 0 && (
+              <span className="flex items-center gap-1.5 text-[13px] text-gray-500">
+                <Loader2 size={13} className="animate-spin" />
+                Updating
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-gray-500">Nothing is saved until you confirm.</p>
 
-      <div className="mt-3 flex gap-3">
-        <button
-          type="button"
-          onClick={onAdd}
-          disabled={selectedCount === 0}
-          className="flex-1 h-12 rounded-xl bg-gray-900 text-white text-[15px] font-medium hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          Add {selectedCount} selected item{selectedCount === 1 ? "" : "s"}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-6 h-12 rounded-xl border border-gray-200 bg-white text-[15px] text-gray-900 hover:bg-gray-50 transition-colors"
-        >
-          Cancel
-        </button>
-      </div>
+          <div className="mt-3 space-y-2.5">
+            {parse.loading && items.length === 0 ? (
+              <div className="rounded-xl border border-gray-200 px-4 py-6 flex items-center justify-center gap-2 text-sm text-gray-500">
+                <Loader2 size={16} className="animate-spin" />
+                Reading what you said…
+              </div>
+            ) : (
+              items.map((item) => (
+                <DraftCard
+                  key={item.key}
+                  item={item}
+                  checked={isChecked(item.key)}
+                  invite={inviteChoice(item)}
+                  showDelete={isDesktop}
+                  onToggle={() => onToggle(item.key)}
+                  onPatch={(patch) => onPatch(item.key, patch)}
+                  onDelete={() => onDelete(item.key)}
+                />
+              ))
+            )}
+          </div>
+
+          <div className="mt-3 flex gap-3">
+            <button
+              type="button"
+              onClick={onAdd}
+              disabled={addDisabled}
+              className="flex-1 h-12 rounded-xl text-[15px] font-medium transition-colors bg-gray-900 text-white hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+            >
+              Add {selectedCount} selected item{selectedCount === 1 ? "" : "s"}
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-6 h-12 rounded-xl border border-gray-200 bg-white text-[15px] text-gray-900 hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+          {incomplete.length > 0 && (
+            <p className="mt-2 text-sm text-amber-800" role="status">
+              {incompleteMessage(incomplete)}
+            </p>
+          )}
+        </>
+      )}
 
       <form
         className="mt-3 flex items-center gap-2 rounded-xl border border-gray-200 pl-4 pr-2 py-2"
@@ -605,71 +749,170 @@ function ReviewView({
   );
 }
 
+// ─── Card ─────────────────────────────────────────────────────────────────────
+
 function Sep() {
   return <span className="text-gray-300">|</span>;
+}
+
+/** Keeps a separator together with the segment after it, so wrapping never strands one. */
+function Seg({ first, children }: { first?: boolean; children: ReactNode }) {
+  return (
+    <span className="flex items-center gap-2.5">
+      {!first && <Sep />}
+      <span className="flex items-center gap-1.5">{children}</span>
+    </span>
+  );
+}
+
+const chip =
+  "h-8 px-3.5 rounded-full border border-gray-200 bg-white text-[13px] text-gray-900 hover:bg-gray-50 transition-colors";
+
+function WhenChips({ onPick }: { onPick: (iso: string) => void }) {
+  const [picking, setPicking] = useState(false);
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <Calendar size={14} className="text-gray-500" />
+      <span className="h-8 px-3.5 rounded-full border border-dashed border-amber-400 bg-amber-50 text-[13px] text-amber-800 flex items-center">
+        When?
+      </span>
+      <button type="button" className={chip} onClick={() => onPick(quickDate("today"))}>Today</button>
+      <button type="button" className={chip} onClick={() => onPick(quickDate("tomorrow"))}>Tomorrow</button>
+      <button type="button" className={chip} onClick={() => onPick(quickDate("weekend"))}>This weekend</button>
+      {picking ? (
+        <input
+          type="date"
+          autoFocus
+          min={toISODate(new Date())}
+          aria-label="Pick a date"
+          onChange={(e) => e.target.value && onPick(e.target.value)}
+          className="h-8 px-2.5 rounded-full border border-gray-300 text-[13px] text-gray-900 focus:outline-none"
+        />
+      ) : (
+        <button type="button" className={chip} onClick={() => setPicking(true)}>Pick a date</button>
+      )}
+    </div>
+  );
+}
+
+function HeardAs({ person, onChange }: { person: TalkPerson; onChange: (name: string | null) => void }) {
+  const [changing, setChanging] = useState(false);
+  if (!person.heardAs) return null;
+  if (changing) {
+    return (
+      <div className="mt-2 flex items-center gap-2 text-[13px] text-gray-500">
+        <span>{`“${person.heardAs}” is`}</span>
+        <select
+          autoFocus
+          defaultValue={person.name}
+          onChange={(e) => {
+            onChange(e.target.value || null);
+            setChanging(false);
+          }}
+          className="h-8 rounded-lg border border-gray-200 px-2 text-[13px] text-gray-900 bg-white"
+        >
+          {PEOPLE_DIRECTORY.map((p) => (
+            <option key={p.id} value={p.name}>{p.name}</option>
+          ))}
+          <option value="">Not someone in People</option>
+        </select>
+      </div>
+    );
+  }
+  return (
+    <p className="mt-2 text-[13px] text-gray-400">
+      {`I heard “${person.heardAs}” and matched it to ${displayName(person.name)}. `}
+      <button type="button" onClick={() => setChanging(true)} className="text-[13px] underline text-gray-700 hover:text-gray-900">
+        Change
+      </button>
+    </p>
+  );
 }
 
 function DraftCard({
   item,
   checked,
+  invite,
   showDelete,
   onToggle,
-  onEdit,
+  onPatch,
   onDelete,
 }: {
   item: DraftItem;
   checked: boolean;
+  invite: boolean;
   showDelete: boolean;
   onToggle: () => void;
-  onEdit: (patch: ItemOverride) => void;
+  onPatch: (patch: ItemOverride) => void;
   onDelete: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(item.title);
+  const [detail, setDetail] = useState(item.detail ?? "");
   const [date, setDate] = useState(item.date ?? "");
   const { dotClass } = getEntityAppearance(KIND_FOR[item.type]);
-  const names = item.people.map((p) => p.name);
+  const waitingOnDate = checked && needsDate(item);
+  const canInvite = invitees(item);
+  const names = (role: TalkPerson["role"]) =>
+    joinNames(item.people.filter((p) => p.role === role).map((p) => displayName(p.name)));
 
   const startEdit = () => {
     setTitle(item.title);
+    setDetail(item.detail ?? "");
     setDate(item.date ?? "");
     setEditing(true);
   };
 
+  const replacePerson = (index: number, name: string | null) => {
+    const people = item.people.map((p, i) => {
+      if (i !== index) return p;
+      return name
+        ? { ...p, name, inPeople: true, heardAs: null }
+        : { ...p, name: p.heardAs ?? p.name, inPeople: false, heardAs: null };
+    });
+    onPatch({ people });
+  };
+
+  const dateSeg = (
+    <Seg first>
+      <Calendar size={13} />
+      {formatDate(item.date)}
+      {item.recurrence === "yearly" && <span className="text-gray-400">· Every year</span>}
+    </Seg>
+  );
+
   const details = (() => {
     switch (item.type) {
-      case "occasion":
+      case "reminder":
+        return dateSeg;
       case "plan":
         return (
           <>
-            <span className="flex items-center gap-1.5"><Calendar size={13} />{formatDate(item.date)}</span>
-            {names.length > 0 && (
-              <span className="flex items-center gap-2.5">
-                <Sep />
-                <span className="flex items-center gap-1.5"><User size={13} />{joinNames(names)}</span>
-              </span>
-            )}
+            {dateSeg}
+            {names("with") && <Seg><User size={13} />With {names("with")}</Seg>}
+            {names("for") && <Seg><User size={13} />For {names("for")}</Seg>}
           </>
         );
-      case "reminder":
+      case "occasion": {
+        const who = joinNames(item.people.map((p) => displayName(p.name)));
         return (
           <>
-            <span className="flex items-center gap-1.5"><Calendar size={13} />{formatDate(item.date)}</span>
-            {item.linkedOccasionTitle && (
-              <span className="flex items-center gap-2.5">
-                <Sep />
-                <Link2 size={13} aria-label="Linked" />
-              </span>
-            )}
+            {dateSeg}
+            {who && <Seg><User size={13} />{who}</Seg>}
           </>
         );
+      }
       case "note":
-        return <span className="flex items-center gap-1.5"><Lock size={13} />Only visible to you</span>;
+        return <Seg first><Lock size={13} />Only visible to you</Seg>;
     }
   })();
 
   return (
-    <div className={`relative rounded-xl border border-gray-200 p-4 flex gap-3 transition-opacity ${checked ? "" : "opacity-60"}`}>
+    <div
+      className={`relative rounded-xl border p-4 flex gap-3 transition-colors ${
+        waitingOnDate ? "border-amber-300" : "border-gray-200"
+      } ${checked ? "" : "opacity-60"}`}
+    >
       <button
         type="button"
         role="checkbox"
@@ -695,13 +938,24 @@ function DraftCard({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               autoFocus
+              aria-label="Title"
               className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-[15px] focus:outline-none focus:border-gray-400"
             />
+            {(item.type === "reminder" || item.type === "plan") && (
+              <input
+                value={detail}
+                onChange={(e) => setDetail(e.target.value)}
+                placeholder="Details (optional)"
+                aria-label="Details"
+                className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:border-gray-400"
+              />
+            )}
             {item.type !== "note" && (
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
+                aria-label="Date"
                 className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:border-gray-400"
               />
             )}
@@ -709,7 +963,11 @@ function DraftCard({
               <button
                 type="button"
                 onClick={() => {
-                  onEdit({ title: title.trim() || item.title, date: date || undefined });
+                  onPatch({
+                    title: title.trim() || item.title,
+                    detail: detail.trim() || null,
+                    ...(date ? { date } : {}),
+                  });
                   setEditing(false);
                 }}
                 className="h-8 px-3 rounded-lg bg-gray-900 text-white text-[13px] font-medium"
@@ -728,10 +986,61 @@ function DraftCard({
         ) : (
           <>
             <p className={`text-[15px] font-medium text-gray-900 mt-0.5 ${showDelete ? "pr-14" : "pr-6"}`}>{item.title}</p>
-            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1 text-[13px] text-gray-500">{details}</div>
-            {item.type === "reminder" && item.linkedOccasionTitle && (
-              <p className="text-[13px] text-gray-500 mt-1">Linked to {item.linkedOccasionTitle}</p>
+            {item.detail && <p className="text-[14px] text-gray-500">{item.detail}</p>}
+
+            {needsDate(item) ? (
+              <WhenChips onPick={(iso) => onPatch({ date: iso })} />
+            ) : (
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1 text-[13px] text-gray-500">{details}</div>
             )}
+
+            {item.type !== "note" && needsDate(item) && item.type !== "reminder" && (
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1.5 text-[13px] text-gray-500">
+                {item.type === "plan" && names("with") && <Seg first><User size={13} />With {names("with")}</Seg>}
+                {item.type === "plan" && names("for") && <Seg first={!names("with")}><User size={13} />For {names("for")}</Seg>}
+              </div>
+            )}
+
+            {item.linkedTo && (
+              <p className="mt-1 flex items-center gap-1.5 text-[13px] text-gray-500">
+                <Link2 size={13} />
+                Linked to {item.linkedTo.title}
+              </p>
+            )}
+
+            {canInvite.length > 0 && (
+              <div className="mt-3 rounded-xl bg-gray-100 p-3">
+                <p className="text-[15px] text-gray-900">Plan this together?</p>
+                <p className="text-[13px] text-gray-500">
+                  {invite
+                    ? `${joinNames(canInvite.map((p) => displayName(p.name)))} will get an invitation when you add it.`
+                    : "No invitation will be sent."}
+                </p>
+                <div role="radiogroup" aria-label="Plan this together?" className="mt-2.5 grid grid-cols-2 p-1 bg-gray-200/70 rounded-lg">
+                  {[
+                    { value: true, label: `Invite ${canInvite.length === 1 ? displayName(canInvite[0].name) : "them"}` },
+                    { value: false, label: "Just me" },
+                  ].map((opt) => (
+                    <button
+                      key={String(opt.value)}
+                      type="button"
+                      role="radio"
+                      aria-checked={invite === opt.value}
+                      onClick={() => onPatch({ invite: opt.value })}
+                      className={`h-9 rounded-md text-[14px] transition-colors ${
+                        invite === opt.value ? "bg-gray-900 text-white" : "text-gray-700 hover:text-gray-900"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {item.people.map((p, i) => (
+              <HeardAs key={i} person={p} onChange={(name) => replacePerson(i, name)} />
+            ))}
           </>
         )}
       </div>

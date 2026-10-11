@@ -1,36 +1,49 @@
-// Lightweight lookup of the user's people, used to recognize names in
-// Talk to Kinnit transcripts. IDs match the People list and profile pages.
+// Lightweight lookup of the user's people, used by Talk to Kinnit to give the
+// parser context and to resolve names. IDs match the People list and profiles.
 
 export interface DirectoryPerson {
   id: string;
   name: string;
   firstName: string;
+  relationship: string;
+  /** "MM-DD" when on file */
+  birthday?: string;
 }
 
-const NAMES: [id: string, name: string][] = [
-  ["1",  "Sarah Johnson"],
-  ["2",  "Michael Chen"],
-  ["3",  "Emma Davis"],
-  ["4",  "David Martinez"],
-  ["5",  "Lisa Anderson"],
-  ["6",  "James Wilson"],
-  ["7",  "Jen Zambrano"],
-  ["8",  "Tom Becker"],
-  ["9",  "Priya Patel"],
-  ["10", "Elena Garcia"],
-  ["11", "Marco Rossi"],
-  ["12", "Aiko Tanaka"],
-  ["13", "Sylvia Park"],
-  ["14", "John Walker"],
+const PEOPLE: Omit<DirectoryPerson, "firstName">[] = [
+  { id: "1",  name: "Sarah Johnson",  relationship: "Friend",   birthday: "12-14" },
+  { id: "2",  name: "Michael Chen",   relationship: "Partner",  birthday: "11-03" },
+  { id: "3",  name: "Emma Davis",     relationship: "Sister" },
+  { id: "4",  name: "David Martinez", relationship: "Coworker" },
+  { id: "5",  name: "Lisa Anderson",  relationship: "Friend" },
+  { id: "6",  name: "James Wilson",   relationship: "Brother" },
+  { id: "7",  name: "Jen Zambrano",   relationship: "Friend" },
+  { id: "8",  name: "Tom Becker",     relationship: "Neighbor" },
+  { id: "9",  name: "Priya Patel",    relationship: "Friend" },
+  { id: "10", name: "Elena Garcia",   relationship: "Friend" },
+  { id: "11", name: "Marco Rossi",    relationship: "Friend" },
+  { id: "12", name: "Aiko Tanaka",    relationship: "Friend" },
+  { id: "13", name: "Sylvia Park",    relationship: "Friend" },
+  { id: "14", name: "John Walker",    relationship: "Friend" },
+  { id: "15", name: "Leah Kim",       relationship: "Friend" },
+  { id: "16", name: "Chris Morgan",   relationship: "Friend",   birthday: "10-22" },
 ];
 
-export const PEOPLE_DIRECTORY: DirectoryPerson[] = NAMES.map(([id, name]) => ({
-  id,
-  name,
-  firstName: name.split(" ")[0],
+export const PEOPLE_DIRECTORY: DirectoryPerson[] = PEOPLE.map((p) => ({
+  ...p,
+  firstName: p.name.split(" ")[0],
 }));
 
-export function findPersonByFirstName(firstName: string): DirectoryPerson | undefined {
-  const q = firstName.toLowerCase();
-  return PEOPLE_DIRECTORY.find((p) => p.firstName.toLowerCase() === q);
+/** Matches a full name or a first name, case-insensitively. */
+export function findPerson(name: string): DirectoryPerson | undefined {
+  const q = name.trim().toLowerCase();
+  return (
+    PEOPLE_DIRECTORY.find((p) => p.name.toLowerCase() === q) ??
+    PEOPLE_DIRECTORY.find((p) => p.firstName.toLowerCase() === q)
+  );
+}
+
+/** First name for people in the directory, the name as given otherwise. */
+export function displayName(name: string): string {
+  return findPerson(name)?.firstName ?? name;
 }
