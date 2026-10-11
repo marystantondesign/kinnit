@@ -5,6 +5,8 @@ export interface ReminderData {
   notes?: string;
   recurrence: string;
   createdAt: string;
+  /** Occasion this reminder follows up on */
+  linkedOccasionId?: string;
 }
 
 const REMINDER_IDS_KEY = "created-reminders";

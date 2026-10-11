@@ -36,14 +36,16 @@ export interface EntityAppearance {
   bgClass: string;
   /** Glyph color */
   fgClass: string;
+  /** Small solid dot used next to type labels */
+  dotClass: string;
 }
 
 const TINTS = {
-  amber:  { bgClass: "bg-amber-50",  fgClass: "text-amber-600"  },
-  green:  { bgClass: "bg-green-50",  fgClass: "text-green-600"  },
-  blue:   { bgClass: "bg-blue-50",   fgClass: "text-blue-600"   },
-  violet: { bgClass: "bg-violet-50", fgClass: "text-violet-600" },
-  gray:   { bgClass: "bg-gray-100",  fgClass: "text-gray-600"   },
+  amber:  { bgClass: "bg-amber-50",  fgClass: "text-amber-600",  dotClass: "bg-amber-500"  },
+  green:  { bgClass: "bg-green-50",  fgClass: "text-green-600",  dotClass: "bg-green-500"  },
+  blue:   { bgClass: "bg-blue-50",   fgClass: "text-blue-600",   dotClass: "bg-blue-500"   },
+  violet: { bgClass: "bg-violet-50", fgClass: "text-violet-600", dotClass: "bg-violet-500" },
+  gray:   { bgClass: "bg-gray-100",  fgClass: "text-gray-600",   dotClass: "bg-gray-500"   },
 } as const;
 
 export const ENTITY_APPEARANCE: Record<EntityKind, EntityAppearance> = {

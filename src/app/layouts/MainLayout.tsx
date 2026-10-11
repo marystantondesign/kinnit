@@ -15,6 +15,7 @@ import {
   Home,
 } from "lucide-react";
 import { NotificationsBell } from "../components/notifications/NotificationsBell";
+import { TalkToKinnitProvider } from "../components/talk/TalkToKinnit";
 
 // ─── Search data ─────────────────────────────────────────────────────────────
 
@@ -279,6 +280,7 @@ export function MainLayout() {
   };
 
   return (
+    <TalkToKinnitProvider>
     <div className="flex flex-col h-screen">
 
       {/* ── Top bar ─────────────────────────────────────────────────────────── */}
@@ -472,5 +474,6 @@ export function MainLayout() {
       </nav>
 
     </div>
+    </TalkToKinnitProvider>
   );
 }

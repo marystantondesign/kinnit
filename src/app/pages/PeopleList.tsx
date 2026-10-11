@@ -51,6 +51,8 @@ const INITIAL_PEOPLE: Person[] = [
   { id: "11", name: "Marco Rossi", relationship: "Friend", initials: "MR", colorClass: "bg-red-100 text-red-700" },
   { id: "12", name: "Aiko Tanaka", relationship: "Friend", initials: "AT", colorClass: "bg-lime-100 text-lime-700" },
   { id: "4", name: "David Martinez", relationship: "Coworker", initials: "DM", colorClass: "bg-cyan-100 text-cyan-700" },
+  { id: "13", name: "Sylvia Park", relationship: "Friend", initials: "SP", colorClass: "bg-purple-100 text-purple-700" },
+  { id: "14", name: "John Walker", relationship: "Friend", initials: "JW", colorClass: "bg-emerald-100 text-emerald-700" },
 ];
 
 const INITIAL_PENDING_INVITES: Invite[] = [

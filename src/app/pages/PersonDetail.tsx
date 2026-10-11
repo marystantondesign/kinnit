@@ -19,6 +19,8 @@ const PEOPLE: Record<string, PersonData> = {
   "4": { id: "4", name: "David Martinez", initials: "DM", relationship: "Coworker" },
   "5": { id: "5", name: "Lisa Anderson",  initials: "LA", relationship: "Friend"   },
   "6": { id: "6", name: "James Wilson",   initials: "JW", relationship: "Brother"  },
+  "13": { id: "13", name: "Sylvia Park",   initials: "SP", relationship: "Friend"   },
+  "14": { id: "14", name: "John Walker",   initials: "JW", relationship: "Friend"   },
 };
 
 // ─── Category data ────────────────────────────────────────────────────────────

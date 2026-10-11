@@ -12,6 +12,8 @@ import {
 } from "../utils/reminderStorage";
 import { NewOccasionModal } from "./OccasionsIndex";
 import { NewPlanModal } from "./PlansIndex";
+import { useTalkToKinnit } from "../components/talk/TalkToKinnit";
+import { DATA_CHANGED_EVENT } from "../utils/voiceActions";
 import {
   Dialog,
   DialogClose,
@@ -31,6 +33,7 @@ import {
   Search,
   X,
   Clipboard,
+  Mic,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -462,6 +465,7 @@ function TodayCard({ items }: { items: TimelineItem[] }) {
 // ─── Mobile search + compact + button row ─────────────────────────────────────
 
 function MobileSearchRow({ onNewReminder }: { onNewReminder: () => void }) {
+  const { openTalk } = useTalkToKinnit();
   const [query, setQuery]     = useState("");
   const [open, setOpen]       = useState(false);
   const [newOpen, setNewOpen] = useState(false);
@@ -516,6 +520,16 @@ function MobileSearchRow({ onNewReminder }: { onNewReminder: () => void }) {
         )}
         {open && results && <SearchDropdown results={results} onClose={clearSearch} />}
       </div>
+
+      {/* Talk to Kinnit */}
+      <button
+        type="button"
+        onClick={openTalk}
+        aria-label="Talk to Kinnit"
+        className="w-10 h-10 flex-shrink-0 rounded-lg border border-border bg-card flex items-center justify-center text-foreground hover:bg-accent transition-colors"
+      >
+        <Mic size={18} />
+      </button>
 
       {/* Compact + button */}
       <div className="relative flex-shrink-0" ref={newRef}>
@@ -1123,6 +1137,14 @@ export function Home() {
     ...BASE_TIMELINE_ITEMS,
     ...loadCreatedTimelineItems(),
   ]);
+  const { openTalk } = useTalkToKinnit();
+
+  // Pick up items saved from Talk to Kinnit
+  useEffect(() => {
+    const reload = () => setTimelineItems([...BASE_TIMELINE_ITEMS, ...loadCreatedTimelineItems()]);
+    window.addEventListener(DATA_CHANGED_EVENT, reload);
+    return () => window.removeEventListener(DATA_CHANGED_EVENT, reload);
+  }, []);
   const todayItems = getTodayItems(timelineItems);
   const surveyRequestCount = getOpenSurveyRequests().length;
 
@@ -1176,7 +1198,15 @@ export function Home() {
             {"Here's what's coming up across your people."}
           </p>
         </div>
-        <div className="hidden md:block flex-shrink-0">
+        <div className="hidden md:flex items-center gap-2 flex-shrink-0">
+          <button
+            type="button"
+            onClick={openTalk}
+            className="flex items-center gap-1.5 px-4 py-2 border border-border bg-card text-foreground text-sm font-medium rounded hover:bg-accent transition-colors"
+          >
+            <Mic size={15} />
+            Talk to Kinnit
+          </button>
           <NewButton onNewReminder={openReminderWithoutDate} />
         </div>
       </div>
