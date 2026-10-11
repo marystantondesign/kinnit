@@ -397,8 +397,8 @@ function MinimizedPill({ listening, onOpen }: { listening: boolean; onOpen: () =
 
 const BAR_SHAPE = [0.3, 0.5, 0.75, 0.9, 1, 0.9, 0.75, 0.5, 0.3];
 
-function Waveform({ levels, active, size }: { levels: number[]; active: boolean; size: "lg" | "md" }) {
-  const max = size === "lg" ? 52 : 48;
+export function Waveform({ levels, active, size }: { levels: number[]; active: boolean; size: "lg" | "md" | "sm" }) {
+  const max = size === "lg" ? 52 : size === "md" ? 48 : 30;
   return (
     <div className="flex items-center gap-[5px]" aria-hidden>
       {BAR_SHAPE.map((shape, i) => {

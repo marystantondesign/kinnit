@@ -24,7 +24,7 @@ import { FinancialAffairs } from "./pages/FinancialAffairs";
 import { WillEstate } from "./pages/WillEstate";
 import { PrivacySettings } from "./pages/PrivacySettings";
 import { SurveyLibrary } from "./pages/SurveyLibrary";
-import { SurveyDetail } from "./pages/SurveyDetail";
+import { LegacySurveyRedirect, SurveyAnswerRoute, SurveyTalkRoute } from "./pages/survey/SurveyRoutes";
 import { Settings } from "./pages/Settings";
 import { IntegrationsIndex } from "./pages/IntegrationsIndex";
 import { IntegrationConnect } from "./pages/IntegrationConnect";
@@ -70,13 +70,15 @@ export const router = createBrowserRouter([
       { path: "reminders/:reminderId", element: <ReminderDetail /> },
       { path: "about-me", element: <AboutMe /> },
       { path: "about-me/:sectionId", element: <AboutMeSection /> },
+      { path: "about-me/:sectionId/answer", element: <SurveyAnswerRoute /> },
+      { path: "about-me/:sectionId/talk", element: <SurveyTalkRoute /> },
       { path: "about-me/life-legacy", element: <LifeAndLegacy /> },
       { path: "about-me/life-legacy/healthcare-wishes", element: <HealthcareWishes /> },
       { path: "about-me/life-legacy/financial-affairs", element: <FinancialAffairs /> },
       { path: "about-me/life-legacy/will-estate", element: <WillEstate /> },
       { path: "privacy", element: <PrivacySettings /> },
       { path: "survey-library", element: <SurveyLibrary /> },
-      { path: "surveys/:surveyId", element: <SurveyDetail /> },
+      { path: "surveys/:surveyId", element: <LegacySurveyRedirect /> },
       { path: "settings", element: <Settings /> },
       { path: "settings/integrations", element: <IntegrationsIndex /> },
       { path: "settings/integrations/:integrationId/connect", element: <IntegrationConnect /> },

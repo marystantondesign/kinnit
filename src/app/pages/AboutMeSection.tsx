@@ -1,5 +1,6 @@
 import { useParams, Link } from "react-router";
-import { isSurveyCompleted } from "../utils/surveyStorage";
+import { getSurvey } from "../config/surveys";
+import { SurveyOverview } from "./survey/SurveyOverview";
 
 const sectionContent: Record<string, { title: string; placeholder: string }> = {
   "basic-info": {
@@ -56,63 +57,8 @@ const sectionContent: Record<string, { title: string; placeholder: string }> = {
 
 export function AboutMeSection() {
   const { sectionId } = useParams();
-  
-  // Special handling for flowers-plants section
-  if (sectionId === "flowers-plants") {
-    const isCompleted = isSurveyCompleted("flowers-plants-objects");
-    
-    return (
-      <div className="p-4 md:p-8">
-        <div className="mb-6">
-          <Link
-            to="/app/about-me"
-            className="text-sm text-gray-600 hover:text-gray-900"
-          >
-            ← Back to About Me
-          </Link>
-        </div>
-
-        <h1 className="mb-4 md:mb-6">Flowers, Plants, or Objects</h1>
-
-        <div className="border border-gray-200 rounded p-4 md:p-6">
-          <div className="flex flex-col md:flex-row md:items-start justify-between mb-4">
-            <div className="mb-3 md:mb-0">
-              <h2 className="mb-1">Flowers, Plants & Objects</h2>
-              <p className="text-sm text-gray-600">
-                Status: <span className={isCompleted ? "text-green-600" : "text-gray-500"}>
-                  {isCompleted ? "Completed" : "Not Started"}
-                </span>
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row gap-3 mt-4">
-            <Link
-              to="/app/surveys/flowers-plants-objects"
-              className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 text-center"
-            >
-              {isCompleted ? "View Responses" : "Start Survey"}
-            </Link>
-            {isCompleted && (
-              <Link
-                to="/app/surveys/flowers-plants-objects"
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 text-center"
-              >
-                Edit Survey
-              </Link>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-6 p-4 bg-blue-50 rounded border border-blue-200">
-          <h2 className="text-sm font-medium mb-2">Privacy Controls</h2>
-          <p className="text-sm text-gray-600">
-            You can control which connections see this information from your Privacy Settings.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const survey = getSurvey(sectionId);
+  if (survey) return <SurveyOverview key={survey.id} def={survey} />;
 
   const section = sectionId ? sectionContent[sectionId] : undefined;
 
@@ -127,6 +73,7 @@ export function AboutMeSection() {
     );
   }
 
+  // Placeholder until this survey is defined.
   return (
     <div className="p-8">
       <div className="mb-6">
@@ -142,20 +89,13 @@ export function AboutMeSection() {
 
       <div className="border border-gray-200 rounded p-6">
         <p className="text-gray-600 mb-4">{section.placeholder}</p>
-        
+
         <div className="mt-4 p-4 bg-gray-50 rounded">
           <p className="text-sm text-gray-600">
             Placeholder for editable form fields and content management for this section.
             In the full application, you would be able to add, edit, and manage your {section.title.toLowerCase()} here.
           </p>
         </div>
-      </div>
-
-      <div className="mt-6 p-4 bg-blue-50 rounded border border-blue-200">
-        <h2 className="text-sm font-medium mb-2">Privacy Controls</h2>
-        <p className="text-sm text-gray-600">
-          You can control which connections see this information from your Privacy Settings.
-        </p>
       </div>
     </div>
   );

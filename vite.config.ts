@@ -4,16 +4,17 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
 // Serves the Vercel functions in /api from the dev server, so local
-// development matches production (POST /api/parse-talk).
+// development matches production (POST /api/parse-talk, /api/parse-survey).
 function apiFunctions(): Plugin {
   return {
     name: 'kinnit-api-functions',
     configureServer(server) {
-      server.middlewares.use('/api/parse-talk', async (req, res) => {
+      for (const name of ['parse-talk', 'parse-survey'])
+      server.middlewares.use(`/api/${name}`, async (req, res) => {
         try {
           const chunks: Buffer[] = []
           for await (const chunk of req) chunks.push(chunk as Buffer)
-          const mod = await server.ssrLoadModule('/api/parse-talk.ts')
+          const mod = await server.ssrLoadModule(`/api/${name}.ts`)
           const handler = mod[req.method ?? 'GET']
           if (!handler) {
             res.statusCode = 405

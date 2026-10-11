@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Outlet, NavLink, Link } from "react-router";
+import { Outlet, NavLink, Link, useLocation } from "react-router";
 import {
   Users,
   Calendar,
@@ -238,6 +238,8 @@ const mobileNavClass = ({ isActive }: { isActive: boolean }) =>
 // ─── Layout ───────────────────────────────────────────────────────────────────
 
 export function MainLayout() {
+  // No tab bar inside a survey (its own sticky bar takes the bottom).
+  const inSurvey = /^\/app\/about-me\/[^/]+\/(answer|talk)$/.test(useLocation().pathname);
   const [query, setQuery]             = useState("");
   const [searchOpen, setSearchOpen]   = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -443,12 +445,12 @@ export function MainLayout() {
       </header>
 
       {/* ── Content — full width, no sidebar ──────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto mobile-scroll-pb">
+      <main className={`flex-1 overflow-y-auto ${inSurvey ? "" : "mobile-scroll-pb"}`}>
         <Outlet />
       </main>
 
       {/* ── Mobile bottom nav ─────────────────────────────────────────────── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 pt-1 z-10 mobile-nav-pb">
+      <nav className={`${inSurvey ? "hidden" : "md:hidden"} fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 pt-1 z-10 mobile-nav-pb`}>
         <div className="flex items-center justify-around">
           <NavLink to="/app" end className={mobileNavClass}>
             <Home size={20} />

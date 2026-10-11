@@ -2,6 +2,8 @@ import { useState, type KeyboardEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { Plus, User, Users } from "lucide-react";
 import { getSurveyResponse } from "../utils/surveyStorage";
+import { getSurvey } from "../config/surveys";
+import { getSurveyState } from "../utils/surveyAnswers";
 import {
   SURVEY_REQUESTS,
   getOpenAboutMeRequests,
@@ -10,6 +12,7 @@ import {
   type SurveyRequest,
   type SurveyRequester,
 } from "../utils/surveyRequests";
+import { getSharingTarget, type SharingPerson, type SharingTarget } from "../utils/aboutMeSharing";
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
 import { Button } from "../components/ui/button";
 import {
@@ -114,13 +117,21 @@ const SKIP_TREATMENT = new Set(["survey-responses"]);
 // Real survey completions (from localStorage) take precedence over these.
 const MOCK_COMPLETED: Record<string, string> = {
   "basic-info":       "Oct 10, 2026",
-  "gift-preferences": "Sep 5, 2026",
-  "food-drink":       "Sep 5, 2026",
   "allergies":        "Sep 5, 2026",
 };
 
-function getCompletion(section: SectionCard): { completed: boolean; date: string | null } {
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+function getCompletion(section: SectionCard): { completed: boolean; inProgress?: boolean; date: string | null } {
   if (SKIP_TREATMENT.has(section.id)) return { completed: false, date: null };
+
+  // Redesigned surveys keep their own status.
+  if (getSurvey(section.id)) {
+    const state = getSurveyState(section.id);
+    if (state.status === "completed") return { completed: true, date: fmtDate(state.updatedAt ?? state.completedAt!) };
+    return { completed: false, inProgress: state.status === "in-progress", date: null };
+  }
 
   // Real data from localStorage wins
   const response = getSurveyResponse(section.surveyId ?? section.id);
@@ -137,91 +148,6 @@ function getCompletion(section: SectionCard): { completed: boolean; date: string
   if (mock) return { completed: true, date: mock };
 
   return { completed: false, date: null };
-}
-
-// ─── Sharing data ─────────────────────────────────────────────────────────────
-
-interface SharingPerson {
-  id: string;
-  name: string;
-  initials: string;
-  colorClass: string;
-}
-
-type SharingTarget =
-  | { type: "individuals"; people: SharingPerson[] }
-  | { type: "group"; name: string; members: SharingPerson[] };
-
-const PEOPLE: Record<string, SharingPerson> = {
-  sarah:   { id: "sarah",   name: "Sarah",   initials: "SJ", colorClass: "bg-amber-100 text-amber-700" },
-  michael: { id: "michael", name: "Michael", initials: "MC", colorClass: "bg-blue-100 text-blue-700" },
-  lisa:    { id: "lisa",    name: "Lisa",    initials: "LA", colorClass: "bg-orange-100 text-orange-700" },
-  jen:     { id: "jen",     name: "Jen",     initials: "JW", colorClass: "bg-pink-100 text-pink-700" },
-  tom:     { id: "tom",     name: "Tom",     initials: "TB", colorClass: "bg-slate-200 text-slate-600" },
-  emma:    { id: "emma",    name: "Emma",    initials: "ED", colorClass: "bg-violet-100 text-violet-700" },
-  david:   { id: "david",   name: "David",   initials: "DM", colorClass: "bg-emerald-100 text-emerald-700" },
-  alex:    { id: "alex",    name: "Alex",    initials: "AC", colorClass: "bg-cyan-100 text-cyan-700" },
-  jordan:  { id: "jordan",  name: "Jordan",  initials: "JS", colorClass: "bg-rose-100 text-rose-700" },
-  priya:   { id: "priya",   name: "Priya",   initials: "PP", colorClass: "bg-lime-100 text-lime-700" },
-};
-
-const INITIAL_SHARING: Record<string, SharingTarget> = {
-  "basic-info": {
-    type: "group",
-    name: "NYC friends",
-    members: [PEOPLE.sarah, PEOPLE.lisa, PEOPLE.jen, PEOPLE.tom],
-  },
-  "gift-preferences": {
-    type: "individuals",
-    people: [PEOPLE.lisa],
-  },
-  "food-drink": {
-    type: "individuals",
-    people: [
-      PEOPLE.sarah,
-      PEOPLE.michael,
-      PEOPLE.jen,
-      PEOPLE.lisa,
-      PEOPLE.tom,
-      PEOPLE.emma,
-      PEOPLE.david,
-      PEOPLE.alex,
-      PEOPLE.jordan,
-      PEOPLE.priya,
-    ],
-  },
-  allergies: {
-    type: "individuals",
-    people: [PEOPLE.emma],
-  },
-};
-
-function requesterAsSharingPerson(requester: SurveyRequester): SharingPerson {
-  return {
-    id: requester.id,
-    name: requester.name,
-    initials: requester.initials,
-    colorClass: requester.colorClass,
-  };
-}
-
-function getSharingTarget(surveyId: string, resolvedIds: string[]): SharingTarget | null {
-  const initial = INITIAL_SHARING[surveyId];
-  const acceptedPeople = SURVEY_REQUESTS.filter(
-    (request) =>
-      request.surveyId === surveyId &&
-      request.kind === "access" &&
-      resolvedIds.includes(request.id) &&
-      request.requester
-  ).map((request) => requesterAsSharingPerson(request.requester!));
-
-  if (acceptedPeople.length === 0) return initial ?? null;
-  if (!initial) return { type: "individuals", people: acceptedPeople };
-  if (initial.type === "group") return initial;
-
-  const peopleById = new Map(initial.people.map((person) => [person.id, person]));
-  for (const person of acceptedPeople) peopleById.set(person.id, person);
-  return { type: "individuals", people: [...peopleById.values()] };
 }
 
 // ─── Bottom-line primitives ───────────────────────────────────────────────────
@@ -518,7 +444,7 @@ export function AboutMe() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
         {sections.map((section) => {
-          const { completed, date } = getCompletion(section);
+          const { completed, inProgress, date } = getCompletion(section);
           const skipTreatment = SKIP_TREATMENT.has(section.id);
           const surveyId = section.surveyId ?? section.id;
           const sharing = completed
@@ -561,7 +487,7 @@ export function AboutMe() {
                 <div className="mt-3 h-5 flex items-center justify-between gap-2">
                   {!skipTreatment ? (
                     <p className="min-w-0 truncate text-xs text-muted-foreground">
-                      {completed && date ? `Last updated ${date}` : "Not started"}
+                      {completed && date ? `Last updated ${date}` : inProgress ? "In progress" : "Not started"}
                     </p>
                   ) : (
                     <span />
