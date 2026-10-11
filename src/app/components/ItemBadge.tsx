@@ -67,3 +67,19 @@ export function ItemDot({
 export function itemStripeStyle(type: ItemFamily, width = 3): CSSProperties {
   return { boxShadow: `inset ${width}px 0 0 0 ${familyColors(type).dot}` };
 }
+
+/** A bare item icon in the family's icon color, for buttons like "Add reminder". */
+export function ItemIcon({ type, icon, size = 16 }: ItemLook & { size?: number }) {
+  const Icon = getItemIcon(type, icon);
+  return (
+    <Icon
+      aria-hidden
+      size={size}
+      strokeWidth={ITEM_ICON_STROKE}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ color: familyColors(type).icon }}
+      className="flex-shrink-0"
+    />
+  );
+}

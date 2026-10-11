@@ -35,13 +35,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Calendar,
-  Flag,
-  Bell,
-  User,
   Search,
   X,
-  Clipboard,
   Mic,
 } from "lucide-react";
 
@@ -1057,9 +1052,7 @@ function SurveyRequestSummary({ count }: { count: number }) {
       to="/app/about-me"
       className="flex items-center gap-3 border border-border bg-muted/40 px-4 py-3.5 rounded-[var(--request-card-radius)] hover:bg-muted/70 transition-colors"
     >
-      <div className="size-10 rounded-lg border border-border bg-card flex items-center justify-center flex-shrink-0">
-        <Clipboard size={16} className="text-muted-foreground" />
-      </div>
+      <ItemBadge type="request" icon="fill-out" size="lg" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground">
           {count} survey request{count !== 1 ? "s" : ""}

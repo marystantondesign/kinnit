@@ -1,4 +1,5 @@
 import { useEffect, useState, type KeyboardEvent } from "react";
+import { avatarClassFor } from "../utils/peopleDirectory";
 import { useNavigate } from "react-router";
 import { MoreHorizontal, Plus, Search, Users, X } from "lucide-react";
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
@@ -39,22 +40,22 @@ interface Group {
 type DirectoryFilter = "all" | "pending" | "sent";
 
 const INITIAL_PEOPLE: Person[] = [
-  { id: "1", name: "Sarah Johnson", relationship: "Friend", initials: "SJ", colorClass: "bg-amber-100 text-amber-700" },
-  { id: "2", name: "Michael Chen", relationship: "Partner", initials: "MC", colorClass: "bg-blue-100 text-blue-700" },
-  { id: "3", name: "Emma Davis", relationship: "Sister", initials: "ED", colorClass: "bg-violet-100 text-violet-700" },
-  { id: "6", name: "James Wilson", relationship: "Brother", initials: "JW", colorClass: "bg-emerald-100 text-emerald-700" },
-  { id: "5", name: "Lisa Anderson", relationship: "Friend", initials: "LA", colorClass: "bg-orange-100 text-orange-700" },
-  { id: "7", name: "Jen Zambrano", relationship: "Friend", initials: "JZ", colorClass: "bg-pink-100 text-pink-700" },
-  { id: "8", name: "Tom Becker", relationship: "Neighbor", initials: "TB", colorClass: "bg-slate-200 text-slate-600" },
-  { id: "9", name: "Priya Patel", relationship: "Friend", initials: "PP", colorClass: "bg-purple-100 text-purple-700" },
-  { id: "10", name: "Elena Garcia", relationship: "Friend", initials: "EG", colorClass: "bg-rose-100 text-rose-700" },
-  { id: "11", name: "Marco Rossi", relationship: "Friend", initials: "MR", colorClass: "bg-red-100 text-red-700" },
-  { id: "12", name: "Aiko Tanaka", relationship: "Friend", initials: "AT", colorClass: "bg-lime-100 text-lime-700" },
-  { id: "4", name: "David Martinez", relationship: "Coworker", initials: "DM", colorClass: "bg-cyan-100 text-cyan-700" },
-  { id: "13", name: "Sylvia Park", relationship: "Friend", initials: "SP", colorClass: "bg-purple-100 text-purple-700" },
-  { id: "14", name: "John Walker", relationship: "Friend", initials: "JW", colorClass: "bg-emerald-100 text-emerald-700" },
-  { id: "15", name: "Leah Kim", relationship: "Friend", initials: "LK", colorClass: "bg-sky-100 text-sky-700" },
-  { id: "16", name: "Chris Morgan", relationship: "Friend", initials: "CM", colorClass: "bg-yellow-100 text-yellow-700" },
+  { id: "1", name: "Sarah Johnson", relationship: "Friend", initials: "SJ", colorClass: avatarClassFor("1") },
+  { id: "2", name: "Michael Chen", relationship: "Partner", initials: "MC", colorClass: avatarClassFor("2") },
+  { id: "3", name: "Emma Davis", relationship: "Sister", initials: "ED", colorClass: avatarClassFor("3") },
+  { id: "6", name: "James Wilson", relationship: "Brother", initials: "JW", colorClass: avatarClassFor("6") },
+  { id: "5", name: "Lisa Anderson", relationship: "Friend", initials: "LA", colorClass: avatarClassFor("5") },
+  { id: "7", name: "Jen Zambrano", relationship: "Friend", initials: "JZ", colorClass: avatarClassFor("7") },
+  { id: "8", name: "Tom Becker", relationship: "Neighbor", initials: "TB", colorClass: avatarClassFor("8") },
+  { id: "9", name: "Priya Patel", relationship: "Friend", initials: "PP", colorClass: avatarClassFor("9") },
+  { id: "10", name: "Elena Garcia", relationship: "Friend", initials: "EG", colorClass: avatarClassFor("10") },
+  { id: "11", name: "Marco Rossi", relationship: "Friend", initials: "MR", colorClass: avatarClassFor("11") },
+  { id: "12", name: "Aiko Tanaka", relationship: "Friend", initials: "AT", colorClass: avatarClassFor("12") },
+  { id: "4", name: "David Martinez", relationship: "Coworker", initials: "DM", colorClass: avatarClassFor("4") },
+  { id: "13", name: "Sylvia Park", relationship: "Friend", initials: "SP", colorClass: avatarClassFor("13") },
+  { id: "14", name: "John Walker", relationship: "Friend", initials: "JW", colorClass: avatarClassFor("14") },
+  { id: "15", name: "Leah Kim", relationship: "Friend", initials: "LK", colorClass: avatarClassFor("15") },
+  { id: "16", name: "Chris Morgan", relationship: "Friend", initials: "CM", colorClass: avatarClassFor("16") },
 ];
 
 const INITIAL_PENDING_INVITES: Invite[] = [

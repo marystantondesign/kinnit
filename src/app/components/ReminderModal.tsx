@@ -1,3 +1,4 @@
+import { reminderIconFor } from "../config/itemTypes";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X, CheckSquare, UserRound, Mic, Plus } from "lucide-react";
@@ -164,6 +165,8 @@ export function ReminderModal({ open, onClose, initialDate = "", onSaved }: Remi
       const reminder: ReminderData = {
         id: `reminder-${Date.now()}`,
         action: action.trim(),
+        kind: reminderIconFor(action.trim()),
+        personName: MODAL_PEOPLE.find((p) => p.id === forPeopleIds[0])?.name,
         date,
         notes: taskNotes.trim() || undefined,
         recurrence,

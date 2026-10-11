@@ -24,6 +24,9 @@ const mockParticipants = {
   "3": { id: "3", name: "Emma Davis", initials: "ED" },
   family: { id: "family", name: "Family", initials: "FM" },
   group: { id: "group", name: "Group", initials: "GP" },
+  "5": { id: "5", name: "Lisa Anderson", initials: "LA" },
+  "6": { id: "6", name: "James Wilson", initials: "JW" },
+  "9": { id: "9", name: "Priya Patel", initials: "PP" },
 };
 
 const mockReminders: Record<string, ReminderData> = {
@@ -75,6 +78,33 @@ const mockReminders: Record<string, ReminderData> = {
     linkedOccasion: { id: "5", title: "Group Trip to Mexico" },
     status: "upcoming",
     createdDate: "October 10, 2026",
+  },
+  "6": {
+    id: "6",
+    action: "Call James about the trip",
+    person: mockParticipants["6"],
+    timing: "Oct 14",
+    notes: "Ask about dates and whether he still wants to drive.",
+    status: "upcoming",
+    createdDate: "October 1, 2026",
+  },
+  "7": {
+    id: "7",
+    action: "Gift for Priya",
+    person: mockParticipants["9"],
+    timing: "Oct 28",
+    notes: "She mentioned wanting a pottery class.",
+    status: "upcoming",
+    createdDate: "October 2, 2026",
+  },
+  "8": {
+    id: "8",
+    action: "Thank-you note to Lisa",
+    person: mockParticipants["5"],
+    timing: "Oct 6",
+    notes: "For hosting the book club.",
+    status: "completed",
+    createdDate: "September 28, 2026",
   },
 };
 
