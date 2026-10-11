@@ -10,7 +10,6 @@ import {
   Leaf,
   Martini,
   Salad,
-  ShieldAlert,
   Sparkles,
   Tag,
   Ticket,
@@ -43,8 +42,10 @@ interface SectionBase {
 export interface ChipSection extends SectionBase {
   kind: "chips";
   modes: Sentiment[];
-  /** Label for a single-mode section's chips, e.g. "Please don't" */
+  /** Label for a single-mode section's chips, e.g. "Gifts to skip" */
   singleLabel?: string;
+  /** Mobile talk panel: group this section's answers under its own heading ("Coffee") instead of by Love/Like */
+  heardGroup?: string;
   chips: string[];
 }
 
@@ -79,6 +80,8 @@ export interface SurveyDef {
   talkBackdrop: string;
   /** Kinnit's opening line in the talk panel */
   talkIntro: string;
+  /** Placeholder for typing when there's no microphone */
+  typedExample: string;
   /** Shorter area names for the talk panel's prompt chips */
   talkAreas: { sectionId: string; label: string }[];
   sections: SurveySection[];
@@ -94,13 +97,14 @@ export interface SurveyDef {
 export const SURVEYS: SurveyDef[] = [
   {
     id: "gift-preferences",
-    title: "Gift preferences",
-    intro: "Help the people who love you give well. Take your time, and skip anything you like.",
+    title: "Gift guide",
+    intro: "Help the people who love you give well. Skip anything you like.",
     talkBackdrop: "Think about the best gifts you've gotten, and the ones that missed. Just say it out loud.",
+    typedExample: "I'd love a framed photo or something handmade. Please skip candles…",
     talkIntro: "Tell me what you'd love to get, what you'd rather not, and what feels meaningful to you.",
     talkAreas: [
       { sectionId: "love", label: "Things I'd love" },
-      { sectionId: "dont", label: "Please don't" },
+      { sectionId: "dont", label: "Gifts to skip" },
       { sectionId: "experiences", label: "Experiences" },
       { sectionId: "sentimental", label: "Sentimental" },
       { sectionId: "flowers", label: "Flowers" },
@@ -113,7 +117,7 @@ export const SURVEYS: SurveyDef[] = [
         id: "love",
         kind: "chips",
         title: "Things you'd love",
-        prompt: "Think about what's sitting in your online carts, or what you keep eyeing.",
+        prompt: "What's in your online carts, or what you keep eyeing.",
         ask: "What's something you keep eyeing but never buy for yourself?",
         icon: Gift,
         modes: ["love", "like"],
@@ -135,12 +139,12 @@ export const SURVEYS: SurveyDef[] = [
       {
         id: "dont",
         kind: "chips",
-        title: "Please don't",
-        prompt: "Books, houseplants, candles. What do you already have plenty of?",
+        title: "Gifts to skip",
+        prompt: "Books, houseplants, candles. What do you have plenty of?",
         ask: "Is there anything you'd rather people didn't get you?",
         icon: Ban,
         modes: ["avoid"],
-        singleLabel: "Please don't",
+        singleLabel: "Gifts to skip",
         chips: [
           "Books",
           "Houseplants",
@@ -228,8 +232,8 @@ export const SURVEYS: SurveyDef[] = [
     ],
     integrations: [
       { kind: "connect", id: "wishlists", title: "Online wish lists", detail: "Carts and saved items", icon: "cart" },
-      { kind: "connect", id: "boards", title: "Saved boards", detail: "Pinboards and moodboards", icon: "board" },
-      { kind: "link", id: "link", title: "Paste a link", detail: "A product or a page" },
+      { kind: "connect", id: "boards", title: "Saved boards", detail: "Pinboards", icon: "board" },
+      { kind: "link", id: "link", title: "Paste a link", detail: "A product or page" },
       { kind: "photo", id: "photo", title: "Add a photo", detail: "Something you love" },
     ],
     bringItIn: {
@@ -241,15 +245,16 @@ export const SURVEYS: SurveyDef[] = [
   },
   {
     id: "food-drink",
-    title: "Food and drink",
+    title: "Feed me",
     intro: "What you love to eat and drink, and what to steer clear of. Skip anything you like.",
     talkBackdrop: "Picture your favorite meal, your usual coffee order, the dish you always skip. Just say it out loud.",
-    talkIntro: "Tell me what you love, what you avoid, and anything you're allergic to.",
+    talkIntro: "Tell me what you love, what you avoid, and how you take your coffee.",
+    typedExample: "I love Japanese food, sushi especially. I take my coffee as an oat flat white…",
     talkAreas: [
       { sectionId: "cuisines", label: "Cuisines" },
       { sectionId: "coffee", label: "Coffee" },
       { sectionId: "drinks", label: "Drinks" },
-      { sectionId: "allergies", label: "Allergies" },
+      { sectionId: "dietary", label: "Diet" },
     ],
     fallbackSection: "dishes",
     sections: [
@@ -308,6 +313,7 @@ export const SURVEYS: SurveyDef[] = [
         prompt: "How you take it, so a coffee run comes back right.",
         ask: "How do you take your coffee or tea?",
         icon: Coffee,
+        heardGroup: "Coffee",
         modes: ["love", "like", "avoid"],
         chips: [
           "Black coffee",
@@ -369,10 +375,11 @@ export const SURVEYS: SurveyDef[] = [
       {
         id: "dietary",
         kind: "chips",
-        title: "Dietary needs",
-        prompt: "Anything a host should plan around.",
+        title: "Dietary choices",
+        prompt: "Vegetarian, kosher, and so on. Anything a host should plan around.",
         ask: "Is there anything a host should plan around when they cook for you?",
         icon: Salad,
+        heardGroup: "Diet",
         modes: ["like"],
         singleLabel: "Applies to me",
         chips: [
@@ -389,15 +396,6 @@ export const SURVEYS: SurveyDef[] = [
           "No alcohol",
         ],
       },
-      {
-        id: "allergies",
-        kind: "allergies",
-        title: "Allergies",
-        prompt: "Anything that makes you sick, and how careful people need to be.",
-        ask: "Are you allergic to anything? How careful do people need to be?",
-        icon: ShieldAlert,
-        chips: ["Peanuts", "Tree nuts", "Shellfish", "Fish", "Eggs", "Milk", "Soy", "Wheat", "Sesame"],
-      },
     ],
     integrations: [
       { kind: "connect", id: "resy", title: "Resy", detail: "Saved restaurants", icon: "restaurant" },
@@ -406,16 +404,17 @@ export const SURVEYS: SurveyDef[] = [
     ],
     bringItIn: {
       title: "Bring it in",
-      detail: "Restaurants and recipes you have saved help fill this in.",
+      detail: "Saved restaurants and recipes help fill this in.",
       mobileTitle: "Bring in saved restaurants",
       mobileDetail: "Resy, Corner",
     },
   },
   {
     id: "important-dates",
-    title: "Important dates",
+    title: "Dates that matter",
     intro: "The days that matter to you, and how you like them marked.",
-    talkBackdrop: "Look over your year. Anything come to mind? Just say it out loud and it lands on the calendar.",
+    talkBackdrop: "Look over your year. Anything come to mind? Say it out loud and it lands on the calendar.",
+    typedExample: "My birthday is March 4th, and I don't like a big fuss…",
     talkIntro: "Let's go through your year. Tell me the dates that matter to you, and how you like them marked.",
     talkAreas: [
       { sectionId: "birthdays", label: "Birthdays" },

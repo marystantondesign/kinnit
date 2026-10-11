@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { Check, Mic, Minus, Pause, Pencil, Play, Square, TriangleAlert, X } from "lucide-react";
+import { Check, Lock, Mic, Minus, Pause, Pencil, Play, Square, TriangleAlert, X } from "lucide-react";
 import { SENTIMENT_LABEL, type Sentiment, type SurveyDef, type SurveySection } from "../../config/surveys";
 import { Waveform } from "../../components/talk/TalkToKinnit";
 import { useSpeechCapture } from "../../components/talk/useSpeechCapture";
 import { YearCalendar } from "../../components/surveys/YearCalendar";
-import { BackLink, MODE_ICON } from "../../components/surveys/SurveyBits";
+import { LEAVE_MESSAGE, MODE_ICON, SurveyHeader } from "../../components/surveys/SurveyBits";
 import { applyHeard, parseSurveyTalk, type HeardItem } from "../../utils/surveyParse";
-import { finishSurvey, formatMonthDay, useSurveyState, type SurveyState } from "../../utils/surveyAnswers";
+import { answerCount, finishSurvey, formatMonthDay, useSurveyState, type SurveyState } from "../../utils/surveyAnswers";
 import type { HeardAnswer } from "../../../shared/surveyTalk";
 
 // Talk route: Talk to Kinnit, specific to one survey. Nothing is saved until
@@ -57,10 +57,10 @@ interface HeardRow {
 }
 
 function rowsFor(items: HeardItem[]): HeardRow[] {
-  return items.flatMap((item) => [
-    { key: item.key, item, isNote: false },
-    ...(item.kind === "date" && item.note ? [{ key: noteKey(item.key), item, isNote: true }] : []),
-  ]);
+  return [
+    ...items.map((item) => ({ key: item.key, item, isNote: false })),
+    ...items.filter((i) => i.kind === "date" && i.note).map((item) => ({ key: noteKey(item.key), item, isNote: true })),
+  ];
 }
 
 function sectionOf(def: SurveyDef, id: string) {
@@ -81,8 +81,8 @@ function describe(def: SurveyDef, row: HeardRow): { title: string; sub: string }
   switch (item.kind) {
     case "date":
       return {
-        title: item.date ? `${item.label}, ${formatMonthDay(item.date)}` : item.label,
-        sub: [item.who, item.date ? null : "Date varies", section?.title].filter(Boolean).slice(0, 2).join(" · "),
+        title: item.date ? `${item.label}, ${formatMonthDay(item.date)}` : `${item.label} (date varies)`,
+        sub: item.who || section?.title || "",
       };
     case "pick":
       return { title: item.label, sub: `${modeLabel(section, item.sentiment ?? "like")} · ${section?.title ?? ""}` };
@@ -357,7 +357,7 @@ export function SurveyTalk({ def }: { def: SurveyDef }) {
 
   const close = () => {
     capture.stop();
-    navigate(base);
+    navigate("/app/about-me", { state: { toast: LEAVE_MESSAGE } });
   };
   const switchToTapping = () => {
     capture.stop();
@@ -419,7 +419,7 @@ export function SurveyTalk({ def }: { def: SurveyDef }) {
           }}
           rows={4}
           aria-label={cantListen ? "Type your answers" : "What you said"}
-          placeholder={cantListen ? "I love Japanese food, sushi especially. I have a slight peanut allergy…" : "Nothing yet"}
+          placeholder={cantListen ? def.typedExample : "Nothing yet"}
           className="w-full rounded-2xl bg-gray-50 border border-gray-100 p-4 text-[15px] leading-6 text-gray-900 placeholder:text-gray-400 outline-none focus:border-gray-300 resize-none"
         />
       </div>
@@ -514,7 +514,10 @@ export function SurveyTalk({ def }: { def: SurveyDef }) {
     for (const row of rows) {
       const { item } = row;
       if (row.isNote) add("Notes", row);
-      else if (item.kind === "pick") add(modeLabel(sectionOf(def, item.sectionId), item.sentiment ?? "like"), row);
+      else if (item.kind === "pick") {
+        const section = sectionOf(def, item.sectionId);
+        add(section?.kind === "chips" && section.heardGroup ? section.heardGroup : modeLabel(section, item.sentiment ?? "like"), row);
+      }
       else if (item.kind === "allergy") add("Allergies", row);
       else if (item.kind === "date") add(sectionOf(def, item.sectionId)?.title ?? "Dates", row);
       else add("Sizes", row);
@@ -534,7 +537,9 @@ export function SurveyTalk({ def }: { def: SurveyDef }) {
                 const on = !off.has(row.key);
                 const { item } = row;
                 const allergy = !row.isNote && item.kind === "allergy";
-                const sentiment = !row.isNote && item.kind === "pick" ? (item.sentiment ?? "like") : null;
+                const sec = sectionOf(def, item.sectionId);
+                const grouped = sec?.kind === "chips" && !!sec.heardGroup && item.sentiment !== "avoid";
+                const sentiment = !row.isNote && item.kind === "pick" && !grouped ? (item.sentiment ?? "like") : null;
                 const I = allergy ? TriangleAlert : sentiment ? MODE_ICON[sentiment] : null;
                 const label = describe(def, row).title;
                 const look = !on
@@ -545,7 +550,9 @@ export function SurveyTalk({ def }: { def: SurveyDef }) {
                       ? "bg-gray-100 text-gray-400 line-through"
                       : sentiment === "like"
                         ? "border-[1.5px] border-gray-900 text-gray-900"
-                        : "bg-gray-900 text-white";
+                        : sentiment === "love"
+                          ? "bg-gray-900 text-white"
+                          : "border border-gray-200 text-gray-900";
                 return (
                   <button
                     key={row.key}
@@ -728,10 +735,15 @@ export function SurveyTalk({ def }: { def: SurveyDef }) {
 
   return (
     <>
-      <div className={`px-6 lg:px-10 py-6 lg:py-8 ${wide && !minimized ? "lg:pr-[480px]" : ""}`}>
-        <BackLink />
-        <h1 className="mt-4 text-[30px] lg:text-[34px] leading-tight font-bold text-gray-900">{def.title}</h1>
-        <p className="text-[16px] text-gray-500 mt-1">{def.talkBackdrop}</p>
+      <div className={`px-6 lg:px-10 py-5 lg:py-8 ${wide && !minimized ? "lg:pr-[480px]" : ""}`}>
+        <SurveyHeader
+          title={def.title}
+          value={def.sections.filter((s) => answerCount(s, state.sections[s.id], state.attachments) > 0).length}
+          total={def.sections.length}
+          label="Talking with Kinnit"
+          onLeave={() => capture.stop()}
+        />
+        <p className="text-[16px] text-gray-500 mt-4">{def.talkBackdrop}</p>
         <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 lg:p-8">
           {isDates ? (
             <YearCalendar year={new Date().getFullYear()} heard={heardDates} saved={savedDates} />
@@ -744,11 +756,16 @@ export function SurveyTalk({ def }: { def: SurveyDef }) {
             <span className="size-4 rounded-full bg-gray-900" aria-hidden />
             Just heard
           </span>
+          {isDates && savedDates.size > 0 && (
+            <span className="inline-flex items-center gap-2">
+              <span className="size-4 rounded-full ring-[1.5px] ring-gray-400" aria-hidden />
+              Saved
+            </span>
+          )}
           <span className="inline-flex items-center gap-2">
-            <span className="size-4 rounded-full ring-[1.5px] ring-gray-400" aria-hidden />
-            Saved
+            <Lock size={15} strokeWidth={1.75} aria-hidden />
+            Nothing is saved until you confirm
           </span>
-          <span className="inline-flex items-center gap-2">Nothing is saved until you confirm</span>
         </div>
       </div>
 

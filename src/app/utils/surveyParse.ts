@@ -212,6 +212,9 @@ function cleanPhrase(p: string): string[] {
     .filter((x) => x && !STOP.has(x) && x.split(" ").length <= 4 && x.length <= 30);
 }
 
+/** Lowercase, punctuation out, contractions back ("don t" → "don't"). */
+const clean = (text: string) => ` ${norm(text.replace(/’/g, "'"))} `.replace(/ (s|t|d|ll|re|ve|m) /g, "'$1 ").trim();
+
 const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 function partnerName(): string | undefined {
@@ -236,7 +239,7 @@ export function localParse(def: SurveyDef, transcript: string, focus: string | n
   };
 
   for (const sentenceRaw of transcript.split(/[!?;\n]+|\.(?=\s|$)/)) {
-    const sentence = norm(sentenceRaw.replace(/’/g, "'")).replace(/ (s|t|d|ll|re|ve|m) /g, "'$1 ");
+    const sentence = clean(sentenceRaw);
     if (!sentence) continue;
 
     // Dates
@@ -331,9 +334,20 @@ export function localParse(def: SurveyDef, transcript: string, focus: string | n
     // Preferences
     if (!def.sections.some((s) => s.kind === "chips")) continue;
     let carried: HeardAnswer["sentiment"] = null;
-    for (const clause of sentence.split(/,|\bbut\b|\bthough\b|\bhowever\b|\bexcept\b/)) {
-      const c = clause.trim();
+    for (const clause of sentenceRaw.split(/,|\bbut\b|\bthough\b|\bhowever\b|\bexcept\b/i)) {
+      const c = clean(clause);
       if (!c) continue;
+      // "I take my coffee as an oat flat white"
+      const coffee = def.sections.find((x) => x.id === "coffee");
+      const how = coffee && /\b(?:take|have|drink|order|get) (?:my )?(?:coffee|tea)(?: as| with| like)?(?: an?)? (.+)$/.exec(c);
+      if (coffee && how) {
+        for (const phrase of cleanPhrase(how[1])) {
+          const known = vocab.find((v) => v.section.id === coffee.id && (v.pattern.test(phrase) || v.pattern.test(`${phrase} coffee`)));
+          push({ ...blank, sectionId: coffee.id, kind: "pick", label: known?.label ?? titleCase(phrase), sentiment: "like" });
+        }
+        carried = null;
+        continue;
+      }
       const own = sentimentOf(c);
       const sentiment: HeardAnswer["sentiment"] = own ?? carried;
       carried = sentiment;

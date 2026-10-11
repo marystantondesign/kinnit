@@ -18,6 +18,20 @@ export function BackLink({ to = "/app/about-me", label = "About Me" }: { to?: st
   );
 }
 
+/** Small round icon button used for Back (overview) and X (inside a survey). */
+export function RoundIconLink({ to, label, children, state }: { to: string; label: string; children: ReactNode; state?: unknown }) {
+  return (
+    <Link
+      to={to}
+      state={state}
+      aria-label={label}
+      className="size-11 md:size-12 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-800 hover:bg-gray-50 flex-shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {children}
+    </Link>
+  );
+}
+
 const STATUS_LABEL: Record<SurveyStatus, string> = {
   "not-started": "Not started",
   "in-progress": "In progress",
@@ -233,6 +247,58 @@ export function ModeSwitch({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+export const LEAVE_MESSAGE = "Saved. Pick up anytime.";
+
+/**
+ * The one header row inside a survey: X (leave to About Me, everything is
+ * already saved), title, progress, and optional actions on the right.
+ * On mobile the progress bar runs edge to edge under the row.
+ */
+export function SurveyHeader({
+  title,
+  value,
+  total,
+  label,
+  right,
+  onLeave,
+}: {
+  title: string;
+  value: number;
+  total: number;
+  label: ReactNode;
+  right?: ReactNode;
+  onLeave?: () => void;
+}) {
+  const pct = `${Math.max(0, Math.min(1, value / total)) * 100}%`;
+  return (
+    <div>
+      <div className="flex items-center gap-3 lg:gap-5">
+        <span onClickCapture={onLeave} className="contents">
+          <RoundIconLink to="/app/about-me" label="Leave survey" state={{ toast: LEAVE_MESSAGE }}>
+            <X size={18} strokeWidth={2} />
+          </RoundIconLink>
+        </span>
+        <h1 className="text-[24px] lg:text-[30px] leading-tight font-bold text-gray-900 min-w-0 truncate">{title}</h1>
+        <div
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={total}
+          aria-valuenow={value}
+          aria-label="Survey progress"
+          className="hidden lg:block h-1.5 w-[180px] rounded-full bg-gray-100 overflow-hidden flex-shrink-0"
+        >
+          <div className="h-full rounded-full bg-gray-900 transition-[width] duration-300" style={{ width: pct }} />
+        </div>
+        <span className="ml-auto lg:ml-0 text-[14px] text-gray-500 whitespace-nowrap">{label}</span>
+        {right && <div className="hidden lg:flex items-center gap-5 ml-auto">{right}</div>}
+      </div>
+      <div className="lg:hidden -mx-6 mt-4 h-1 bg-gray-100" aria-hidden>
+        <div className="h-full bg-gray-900 transition-[width] duration-300" style={{ width: pct }} />
+      </div>
     </div>
   );
 }

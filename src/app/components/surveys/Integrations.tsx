@@ -164,27 +164,30 @@ function Tile({ tile, surveyId, sectionId }: { tile: IntegrationTile; surveyId: 
   const [adding, setAdding] = useState(false);
   const Icon = tile.kind === "connect" ? ICONS[tile.icon] : tile.kind === "link" ? Link2 : Image;
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 flex flex-col">
-      <IconCircle>
-        <Icon size={17} strokeWidth={1.75} />
-      </IconCircle>
-      <p className="mt-3 text-[15px] text-gray-900">{tile.title}</p>
-      <p className="text-[13px] text-gray-400">{tile.detail}</p>
-      <div className="mt-3">
+    <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3">
+      <div className="flex items-center gap-3">
+        <IconCircle size="sm">
+          <Icon size={16} strokeWidth={1.75} />
+        </IconCircle>
+        <div className="flex-1 min-w-0">
+          <p className="text-[14px] leading-5 text-gray-900">{tile.title}</p>
+          <p className="text-[12px] leading-4 text-gray-400">{tile.detail}</p>
+        </div>
         {tile.kind === "connect" ? (
-          <ConnectButton id={tile.id} className="w-full text-left" />
+          <ConnectButton id={tile.id} className="h-8 px-3 text-[13px] flex-shrink-0" />
         ) : tile.kind === "link" ? (
-          adding ? (
-            <LinkAdder surveyId={surveyId} sectionId={sectionId} onDone={() => setAdding(false)} />
-          ) : (
-            <button type="button" onClick={() => setAdding(true)} className={`${outlineBtn} w-full text-left`}>
-              Add
-            </button>
-          )
+          <button type="button" onClick={() => setAdding((a) => !a)} className={`${outlineBtn} h-8 px-3 text-[13px] flex-shrink-0`}>
+            {adding ? "Cancel" : "Add"}
+          </button>
         ) : (
-          <PhotoButton surveyId={surveyId} sectionId={sectionId} className="w-full text-left" />
+          <PhotoButton surveyId={surveyId} sectionId={sectionId} className="h-8 px-3 text-[13px] flex-shrink-0" />
         )}
       </div>
+      {tile.kind === "link" && adding && (
+        <div className="mt-2.5">
+          <LinkAdder surveyId={surveyId} sectionId={sectionId} onDone={() => setAdding(false)} />
+        </div>
+      )}
     </div>
   );
 }

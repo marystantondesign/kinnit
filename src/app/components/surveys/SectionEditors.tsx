@@ -59,7 +59,7 @@ export function sectionHint(section: SurveySection, compact = false): string {
       return section.modes.length > 1
         ? compact
           ? "Pick a mode, then tap what fits."
-          : "Pick a mode, then tap what fits. Tap again to clear. Skip anything you like."
+          : "Pick a mode, then tap what fits. Tap again to clear."
         : "Tap what fits. Tap again to clear. Skip anything you like.";
     case "allergies":
       return "Tap anything you're allergic to, then say how careful people need to be.";

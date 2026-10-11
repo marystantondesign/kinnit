@@ -1,5 +1,5 @@
-import { useState, type KeyboardEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { useEffect, useState, type KeyboardEvent } from "react";
+import { Link, useLocation, useNavigate } from "react-router";
 import { Plus, User, Users } from "lucide-react";
 import { getSurveyResponse } from "../utils/surveyStorage";
 import { getSurvey } from "../config/surveys";
@@ -41,13 +41,13 @@ const sections: SectionCard[] = [
   },
   {
     id: "important-dates",
-    title: "Important Dates",
+    title: "Dates that matter",
     description: "Anniversaries, birthdays, and other significant dates",
     link: "/app/about-me/important-dates",
   },
   {
     id: "gift-preferences",
-    title: "Gift Preferences",
+    title: "Gift guide",
     description: "Gift guidance, favorite stores, interests, and things to avoid",
     link: "/app/about-me/gift-preferences",
   },
@@ -59,7 +59,7 @@ const sections: SectionCard[] = [
   },
   {
     id: "food-drink",
-    title: "Food and Drink Preferences",
+    title: "Feed me",
     description: "Favorite foods, drinks, dietary preferences",
     link: "/app/about-me/food-drink",
   },
@@ -391,8 +391,25 @@ function ClusterPopover({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+/** Brief message after leaving a survey ("Saved. Pick up anytime."). */
+function useLeaveToast() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [toast, setToast] = useState<string | null>(() => (location.state as { toast?: string } | null)?.toast ?? null);
+  useEffect(() => {
+    if (!toast) return;
+    // Clear it from history so Back doesn't show it again.
+    navigate(location.pathname, { replace: true, state: null });
+    const t = window.setTimeout(() => setToast(null), 3200);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toast]);
+  return toast;
+}
+
 export function AboutMe() {
   const navigate = useNavigate();
+  const toast = useLeaveToast();
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
   const [resolvedRequestIds, setResolvedRequestIds] = useState(
     getResolvedSurveyRequestIds
@@ -425,6 +442,13 @@ export function AboutMe() {
 
   return (
     <div className="px-6 py-4 md:p-8">
+      <div aria-live="polite" className="fixed left-1/2 -translate-x-1/2 bottom-24 md:bottom-8 z-50 pointer-events-none">
+        {toast && (
+          <p className="rounded-full bg-gray-900 text-white text-[14px] px-4 py-2.5 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-200">
+            {toast}
+          </p>
+        )}
+      </div>
 
       {/* Header row */}
       <div className="flex items-center justify-between mb-4 md:mb-5">
