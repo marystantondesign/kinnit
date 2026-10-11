@@ -367,7 +367,7 @@ function NewButton({ onNewReminder }: { onNewReminder: () => void }) {
       <button
         type="button"
         onClick={() => setOpen((p) => !p)}
-        className="flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded hover:opacity-90 transition-opacity"
+        className="flex items-center gap-1.5 px-3.5 h-9 bg-primary text-primary-foreground text-sm font-medium rounded hover:opacity-90 transition-opacity"
       >
         <Plus size={15} />
         New
@@ -433,7 +433,7 @@ export function Home() {
   };
 
   return (
-    <div className="px-6 md:px-10 py-6 max-w-[1440px]">
+    <div className="px-6 md:px-8 py-4 md:py-3 max-w-[1440px]">
       <NewOccasionModal open={occasionOpen} onClose={() => setOccasionOpen(false)} initialDate={creationDate} />
       <NewPlanModal open={planOpen} onClose={() => setPlanOpen(false)} initialDate={creationDate} />
       <ReminderModal
@@ -444,16 +444,16 @@ export function Home() {
       />
 
       {/* Greeting */}
-      <div className="flex items-start justify-between gap-4 mb-5">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">{getGreeting()}, Mary</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{"Here's what's coming up across your people."}</p>
+      <div className="flex items-center justify-between gap-4 mb-2.5">
+        <div className="md:flex md:items-baseline md:gap-3">
+          <h1 className="text-xl font-semibold text-foreground leading-tight">{getGreeting()}, Mary</h1>
+          <p className="text-[13px] text-muted-foreground">{"Here's what's coming up across your people."}</p>
         </div>
         <div className="hidden md:flex items-center gap-2 flex-shrink-0">
           <button
             type="button"
             onClick={openTalk}
-            className="flex items-center gap-1.5 px-4 py-2 border border-border bg-card text-foreground text-sm font-medium rounded hover:bg-accent transition-colors"
+            className="flex items-center gap-1.5 px-3.5 h-9 border border-border bg-card text-foreground text-sm font-medium rounded hover:bg-accent transition-colors"
           >
             <Mic size={15} />
             Talk to Kinnit
@@ -466,13 +466,13 @@ export function Home() {
       <MobileSearchRow onNewReminder={openReminderWithoutDate} />
 
       {/* Two columns on desktop (≈44 / 56); stacked on mobile */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,44fr)_minmax(0,56fr)] gap-5 items-start">
-        <div className="space-y-5 min-w-0">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,44fr)_minmax(0,56fr)] gap-4 items-start">
+        <div className="space-y-3 min-w-0">
           <TodayPanel entries={entries} />
           <ComingUpPanel entries={entries} />
           <BirthdaysPanel />
         </div>
-        <div className="space-y-5 min-w-0">
+        <div className="space-y-3 min-w-0">
           <CalendarPanel entries={entries} onAdd={openCreation} />
           <DiscoveryCard />
         </div>

@@ -13,14 +13,14 @@ import { DiscoveryCollage } from "./DiscoveryCollage";
 
 function Avatars({ names }: { names: string[] }) {
   return (
-    <div className="flex items-center gap-1.5" aria-hidden>
+    <div className="flex items-center gap-1" aria-hidden>
       {names.map((name) => {
         const a = avatarFor(name);
         return (
           <span
             key={name}
             title={a.label}
-            className={`size-8 rounded-full ring-2 ring-white flex items-center justify-center text-[11px] font-semibold ${a.className}`}
+            className={`size-6 rounded-full ring-2 ring-white flex items-center justify-center text-[9px] font-semibold ${a.className}`}
           >
             {a.initials}
           </span>
@@ -36,12 +36,12 @@ function Deck({ children }: { children: ReactNode }) {
     <div className="relative">
       <div
         aria-hidden
-        className="absolute inset-0 rounded-[22px] translate-x-2 -translate-y-2 rotate-[1.5deg]"
+        className="absolute inset-0 rounded-[20px] translate-x-1.5 -translate-y-1 rotate-[1deg]"
         style={{ background: DISCOVERY_SURFACES.backLavender }}
       />
       <div
         aria-hidden
-        className="absolute inset-0 rounded-[22px] -translate-x-1 -translate-y-1 -rotate-[1deg]"
+        className="absolute inset-0 rounded-[20px] -translate-x-1 -translate-y-0.5 -rotate-[0.75deg]"
         style={{ background: DISCOVERY_SURFACES.backPink }}
       />
       <div className="relative">{children}</div>
@@ -55,7 +55,7 @@ function Message({ title, body, action }: { title: string; body: string; action?
   const colors = familyColors("discovery");
   return (
     <Deck>
-      <div className="rounded-[20px] border px-5 py-6 flex items-center gap-4 min-h-[148px]" style={faceStyle}>
+      <div className="rounded-[18px] border px-4 py-4 flex items-center gap-3 min-h-[110px]" style={faceStyle}>
         <span className="size-11 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: colors.fill, color: colors.icon }}>
           <Sparkles size={20} strokeWidth={1.5} />
         </span>
@@ -110,7 +110,7 @@ export function DiscoveryCard() {
   if (loading) {
     body = (
       <Deck>
-        <div className="rounded-[20px] border min-h-[188px] animate-pulse motion-reduce:animate-none" style={faceStyle} aria-label="Loading discoveries" />
+        <div className="rounded-[18px] border min-h-[136px] animate-pulse motion-reduce:animate-none" style={faceStyle} aria-label="Loading discoveries" />
       </Deck>
     );
   } else if (error) {
@@ -145,62 +145,62 @@ export function DiscoveryCard() {
             aria-label={canRotate ? `${current.statement} Show another discovery.` : undefined}
             onClick={rotate}
             onKeyDown={canRotate ? onKey : undefined}
-            className={`rounded-[20px] border overflow-hidden grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+            className={`rounded-[18px] border overflow-hidden grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
               canRotate ? "cursor-pointer" : ""
             }`}
             style={faceStyle}
           >
             {/* Text stays on the solid surface */}
-            <div className="order-2 sm:order-1 px-5 pb-5 sm:py-5 flex flex-col justify-center gap-3">
+            <div className="order-2 sm:order-1 px-4 pb-4 sm:py-2.5 flex flex-col justify-center gap-1">
               <Avatars names={current.people} />
               <div aria-live="polite">
                 <p
                   key={current.id}
-                  className="text-[19px] leading-snug font-semibold text-gray-900 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-300"
+                  className="text-base leading-snug font-semibold text-gray-900 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-300"
                 >
                   {current.statement}
                 </p>
               </div>
-              <p className="flex items-center gap-1.5 text-[13px] text-gray-600">
-                <Shuffle size={14} strokeWidth={1.75} aria-hidden />
+              <p className="flex items-center gap-1.5 text-xs text-gray-600">
+                <Shuffle size={13} strokeWidth={1.75} aria-hidden />
                 {canRotate ? "Tap for another discovery" : "That's your only discovery for now"}
               </p>
             </div>
             <div
               key={`art-${current.id}`}
-              className="order-1 sm:order-2 h-[150px] sm:h-auto sm:min-h-[188px] m-4 sm:my-4 sm:ml-0 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300"
+              className="order-1 sm:order-2 h-[120px] sm:h-auto sm:min-h-[84px] m-3 sm:my-2 sm:ml-0 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300"
             >
               <DiscoveryCollage topic={current.topic} />
             </div>
           </div>
         </Deck>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="mt-2 flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setSaved(current.id, !saved)}
             aria-pressed={saved}
-            className={`h-10 px-4 rounded-lg text-sm font-medium inline-flex items-center gap-2 border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+            className={`h-10 sm:h-7 px-3 rounded-lg text-[13px] font-medium inline-flex items-center gap-1.5 border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
               saved ? "bg-white text-gray-900 border-gray-300 hover:bg-gray-50" : "bg-gray-900 text-white border-gray-900 hover:bg-gray-800"
             }`}
           >
-            {saved ? <BookmarkCheck size={16} strokeWidth={1.75} /> : <Bookmark size={16} strokeWidth={1.75} />}
+            {saved ? <BookmarkCheck size={14} strokeWidth={1.75} /> : <Bookmark size={14} strokeWidth={1.75} />}
             {saved ? "Saved" : "Save"}
           </button>
           <button
             type="button"
             onClick={dismissCurrent}
-            className="h-10 px-4 rounded-lg text-sm inline-flex items-center gap-2 border border-gray-200 bg-white text-gray-800 hover:bg-gray-50 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="h-10 sm:h-7 px-3 rounded-lg text-[13px] inline-flex items-center gap-1.5 border border-gray-200 bg-white text-gray-800 hover:bg-gray-50 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            <Ban size={16} strokeWidth={1.75} />
+            <Ban size={14} strokeWidth={1.75} />
             Don't show again
           </button>
           <Link
             to="/app/discoveries"
-            className="ml-auto h-10 px-1 inline-flex items-center gap-1 text-sm font-medium text-gray-900 hover:underline underline-offset-2 rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-10 sm:h-7 px-1.5 inline-flex items-center gap-1 text-[13px] font-medium text-gray-900 hover:underline underline-offset-2 rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             View all discoveries
-            <ArrowRight size={15} strokeWidth={1.75} />
+            <ArrowRight size={14} strokeWidth={1.75} />
           </Link>
         </div>
       </>
@@ -208,8 +208,8 @@ export function DiscoveryCard() {
   }
 
   return (
-    <section aria-labelledby="discoveries-heading" className="rounded-2xl border border-gray-200 bg-white p-5">
-      <h2 id="discoveries-heading" className="text-lg font-semibold text-gray-900 mb-4">
+    <section aria-labelledby="discoveries-heading" className="rounded-2xl border border-gray-200 bg-white px-4 py-2.5">
+      <h2 id="discoveries-heading" className="relative z-10 text-[15px] font-semibold text-gray-900 mb-2">
         Discoveries
       </h2>
       {body}

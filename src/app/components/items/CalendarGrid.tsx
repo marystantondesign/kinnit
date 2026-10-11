@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ItemDot } from "../ItemBadge";
 import { familyColors, type ItemFamily } from "../../config/itemTypes";
@@ -47,6 +47,10 @@ export function CalendarGrid({
     setCursor((c) => (mode === "month" ? new Date(c.getFullYear(), c.getMonth() + dir, 1) : addDays(c, 7 * dir)));
 
   const weekStart = startOfWeek(cursor);
+  const monthStart = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+  const monthRows = Math.ceil((monthStart.getDay() + new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate()) / 7);
+  // Week view takes the same height as the month it sits in.
+  const footprint = compact ? 16 + monthRows * 33 : undefined;
   const heading =
     mode === "month"
       ? cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" })
@@ -68,21 +72,21 @@ export function CalendarGrid({
         aria-label={day.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
         aria-pressed={isSelected}
         tabIndex={inMonth ? 0 : -1}
-        className={`relative z-10 flex flex-col items-center gap-1 ${compact ? "py-1" : "py-1.5"} rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+        className={`relative z-10 flex flex-col items-center ${compact ? "gap-px py-0" : "gap-1 py-1.5"} rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring ${
           inMonth ? "" : "invisible"
         }`}
       >
         <span
-          className={`${compact ? "size-8" : "size-9"} rounded-full flex items-center justify-center text-sm transition-colors ${
+          className={`${compact ? "size-7 text-[13px]" : "size-9 text-sm"} rounded-full flex items-center justify-center transition-colors ${
             isToday ? "bg-gray-900 text-white font-semibold" : "text-gray-900 hover:bg-gray-100"
           }`}
           style={isSelected && !isToday ? { boxShadow: `inset 0 0 0 1.5px ${ring}` } : undefined}
         >
           {day.getDate()}
         </span>
-        <span className="h-1.5 flex items-center gap-0.5">
+        <span className={`${compact ? "h-1" : "h-1.5"} flex items-center gap-0.5`}>
           {dots.slice(0, 3).map((i) => (
-            <ItemDot key={`${i.family}-${i.id}`} type={i.family} completed={i.completed} size={6} />
+            <ItemDot key={`${i.family}-${i.id}`} type={i.family} completed={i.completed} size={compact ? 4 : 6} />
           ))}
         </span>
       </button>
@@ -119,7 +123,7 @@ export function CalendarGrid({
     const rows = Math.ceil((first.getDay() + lastDay.getDate()) / 7);
     return (
       <div>
-        <div className="grid grid-cols-7 text-center text-xs text-gray-400 mb-1">
+        <div className={`grid grid-cols-7 text-center ${compact ? "text-[11px]" : "text-xs mb-1"} text-gray-400`}>
           {WEEKDAYS.map((d, i) => (
             <span key={i}>{d}</span>
           ))}
@@ -141,7 +145,7 @@ export function CalendarGrid({
   };
 
   const weekGrid = () => (
-    <div className="grid grid-cols-1 md:grid-cols-7 gap-2">
+    <div className={`grid grid-cols-1 md:grid-cols-7 gap-2 ${compact ? "md:h-[var(--cal-h)]" : ""}`}>
       {Array.from({ length: 7 }, (_, c) => {
         const day = addDays(weekStart, c);
         const onDay = entries.filter((i) => occursOn(i, day));
@@ -154,7 +158,7 @@ export function CalendarGrid({
             onClick={() => onSelect(day)}
             aria-pressed={isSelected}
             className={`text-left rounded-xl border border-gray-200 p-2.5 ${
-              compact ? "min-h-[56px] md:min-h-[200px]" : "min-h-[72px] md:min-h-[240px]"
+              compact ? "min-h-[44px] md:min-h-0 md:h-full" : "min-h-[72px] md:min-h-[240px]"
             } flex md:flex-col gap-2 md:gap-1.5 hover:bg-gray-50 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring`}
             style={isSelected ? { borderColor: ring, boxShadow: `inset 0 0 0 0.5px ${ring}` } : undefined}
           >
@@ -182,7 +186,7 @@ export function CalendarGrid({
     </div>
   );
 
-  const arrowClass = "size-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  const arrowClass = `${compact ? "size-7" : "size-8"} rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 outline-none focus-visible:ring-2 focus-visible:ring-ring`;
 
   const arrows = (
     <>
@@ -197,8 +201,8 @@ export function CalendarGrid({
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <h2 className={`${compact ? "text-base" : "text-base md:text-lg"} font-semibold text-gray-900`}>{heading}</h2>
+      <div className={`flex items-center justify-between gap-3 ${compact ? "mb-1" : "mb-3"}`}>
+        <h2 className={`${compact ? "text-[15px]" : "text-base md:text-lg"} font-semibold text-gray-900`}>{heading}</h2>
         <div className="flex items-center gap-2">
           <div role="radiogroup" aria-label="Calendar range" className="flex gap-1">
             {(["week", "month"] as Mode[]).map((m) => (
@@ -211,7 +215,7 @@ export function CalendarGrid({
                   setMode(m);
                   setCursor(selected);
                 }}
-                className={`h-8 px-3 md:px-4 rounded-lg text-sm border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                className={`${compact ? "h-7 px-2.5 text-xs" : "h-8 px-3 md:px-4 text-sm"} rounded-lg border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   mode === m ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
                 }`}
               >
@@ -223,7 +227,7 @@ export function CalendarGrid({
         </div>
       </div>
       {/* Same footprint in Week and Month */}
-      <div className={compact ? "md:min-h-[19rem]" : "md:min-h-[22rem]"}>{mode === "month" ? monthGrid() : weekGrid()}</div>
+      <div className={compact ? "md:min-h-[var(--cal-h)]" : "md:min-h-[22rem]"} style={footprint ? ({ "--cal-h": `${footprint}px` } as CSSProperties) : undefined}>{mode === "month" ? monthGrid() : weekGrid()}</div>
       <div className="flex sm:hidden justify-between mt-2">{arrows}</div>
     </div>
   );

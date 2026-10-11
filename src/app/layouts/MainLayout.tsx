@@ -443,7 +443,7 @@ export function MainLayout() {
       </header>
 
       {/* ── Content — full width, no sidebar ──────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto mobile-scroll-pb md:pb-24">
+      <main className="flex-1 overflow-y-auto mobile-scroll-pb">
         <Outlet />
       </main>
 
