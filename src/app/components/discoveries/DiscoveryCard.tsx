@@ -31,9 +31,9 @@ function Avatars({ names }: { names: string[] }) {
 }
 
 /** Peach face with lavender and pink cards peeking out behind it. */
-function Deck({ children }: { children: ReactNode }) {
+function Deck({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className="relative">
+    <div className={`relative ${className}`}>
       <div
         aria-hidden
         className="absolute inset-0 rounded-[20px] translate-x-1.5 -translate-y-1 rotate-[1deg]"
@@ -44,7 +44,7 @@ function Deck({ children }: { children: ReactNode }) {
         className="absolute inset-0 rounded-[20px] -translate-x-1 -translate-y-0.5 -rotate-[0.75deg]"
         style={{ background: DISCOVERY_SURFACES.backPink }}
       />
-      <div className="relative">{children}</div>
+      <div className="relative h-full">{children}</div>
     </div>
   );
 }
@@ -69,7 +69,7 @@ function Message({ title, body, action }: { title: string; body: string; action?
   );
 }
 
-export function DiscoveryCard() {
+export function DiscoveryCard({ className = "" }: { className?: string }) {
   const { loading, error, all, eligible, isSaved, setSaved, setDismissed } = useDiscoveries();
   const [currentId, setCurrentId] = useState<string | null>(null);
 
@@ -138,14 +138,14 @@ export function DiscoveryCard() {
     const saved = isSaved(current.id);
     body = (
       <>
-        <Deck>
+        <Deck className="flex-1">
           <div
             role={canRotate ? "button" : undefined}
             tabIndex={canRotate ? 0 : undefined}
             aria-label={canRotate ? `${current.statement} Show another discovery.` : undefined}
             onClick={rotate}
             onKeyDown={canRotate ? onKey : undefined}
-            className={`rounded-[18px] border overflow-hidden grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+            className={`h-full rounded-[18px] border overflow-hidden grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
               canRotate ? "cursor-pointer" : ""
             }`}
             style={faceStyle}
@@ -208,7 +208,7 @@ export function DiscoveryCard() {
   }
 
   return (
-    <section aria-labelledby="discoveries-heading" className="rounded-2xl border border-gray-200 bg-white px-4 py-2.5">
+    <section aria-labelledby="discoveries-heading" className={`rounded-2xl border border-gray-200 bg-white px-4 py-2.5 flex flex-col ${className}`}>
       <h2 id="discoveries-heading" className="relative z-10 text-[15px] font-semibold text-gray-900 mb-2">
         Discoveries
       </h2>

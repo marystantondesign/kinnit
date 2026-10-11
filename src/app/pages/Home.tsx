@@ -466,15 +466,16 @@ export function Home() {
       <MobileSearchRow onNewReminder={openReminderWithoutDate} />
 
       {/* Two columns on desktop (≈44 / 56); stacked on mobile */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,44fr)_minmax(0,56fr)] gap-4 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,44fr)_minmax(0,56fr)] gap-4 items-start lg:items-stretch">
         <div className="space-y-3 min-w-0">
           <TodayPanel entries={entries} />
           <ComingUpPanel entries={entries} />
           <BirthdaysPanel />
         </div>
-        <div className="space-y-3 min-w-0">
+        {/* Discoveries takes up whatever height the calendar leaves (more in Week view). */}
+        <div className="space-y-3 min-w-0 lg:space-y-0 lg:flex lg:flex-col lg:gap-3">
           <CalendarPanel entries={entries} onAdd={openCreation} />
-          <DiscoveryCard />
+          <DiscoveryCard className="lg:flex-1" />
         </div>
       </div>
     </div>

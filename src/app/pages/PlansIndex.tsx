@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { ItemCard } from "../components/items/ItemCard";
+import { ItemCalendar } from "../components/items/ItemCalendar";
 import {
   CardGrid,
   EmptyNote,
@@ -10,9 +11,11 @@ import {
   ListPageFrame,
   ListPageHeader,
   SectionLabel,
+  useStoredView,
   type Chip,
 } from "../components/items/ListPage";
-import { formatSpan, loadPlans, type PlanItem } from "../data/trackedItems";
+import { formatSpan, loadPlans, sortByNext, type PlanItem } from "../data/trackedItems";
+import { toISODate } from "../utils/talkClient";
 
 // ─── Templates ───────────────────────────────────────────────────────────────
 
@@ -143,9 +146,10 @@ function PlanCard({ plan }: { plan: PlanItem }) {
 }
 
 export function PlansIndex() {
+  const [view, setView] = useStoredView("plans");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
-  const [modal, setModal] = useState(false);
+  const [modal, setModal] = useState<{ open: boolean; date: string }>({ open: false, date: "" });
   const [plans] = useState(loadPlans);
 
   const q = query.trim().toLowerCase();
@@ -157,23 +161,42 @@ export function PlansIndex() {
 
   return (
     <ListPageFrame>
-      <NewPlanModal open={modal} onClose={() => setModal(false)} />
+      <NewPlanModal
+        open={modal.open}
+        initialDate={modal.date}
+        onClose={() => setModal({ open: false, date: "" })}
+      />
       <ListPageHeader
         title="Plans"
         description="Coordinate details, people, and next steps."
         newLabel="New Plan"
-        onNew={() => setModal(true)}
+        onNew={() => setModal({ open: true, date: "" })}
+        view={view}
+        onViewChange={setView}
       />
-      <FilterBar query={query} onQuery={setQuery} placeholder="Search by title, person, or occasion…" chips={CHIPS} active={filter} onChip={setFilter} />
-      <SectionLabel>Your plans</SectionLabel>
-      {shown.length ? (
-        <CardGrid>
-          {shown.map((plan) => (
-            <PlanCard key={plan.id} plan={plan} />
-          ))}
-        </CardGrid>
+
+      {view === "list" ? (
+        <>
+          <FilterBar query={query} onQuery={setQuery} placeholder="Search by title, person, or occasion…" chips={CHIPS} active={filter} onChip={setFilter} />
+          <SectionLabel>Your plans</SectionLabel>
+          {shown.length ? (
+            <CardGrid>
+              {shown.map((plan) => (
+                <PlanCard key={plan.id} plan={plan} />
+              ))}
+            </CardGrid>
+          ) : (
+            <EmptyNote>No plans match.</EmptyNote>
+          )}
+        </>
       ) : (
-        <EmptyNote>No plans match.</EmptyNote>
+        <ItemCalendar
+          family="plan"
+          items={sortByNext(plans.map((p) => ({ ...p, completed: p.status === "completed" })))}
+          renderCard={(p) => <PlanCard plan={p} />}
+          addLabel="Add plan"
+          onAdd={(day) => setModal({ open: true, date: toISODate(day) })}
+        />
       )}
     </ListPageFrame>
   );
