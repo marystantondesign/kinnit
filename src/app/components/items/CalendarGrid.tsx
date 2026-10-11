@@ -145,7 +145,7 @@ export function CalendarGrid({
   };
 
   const weekGrid = () => (
-    <div className={`grid grid-cols-1 md:grid-cols-7 gap-2 ${compact ? "md:h-[var(--cal-h)]" : ""}`}>
+    <div className="grid grid-cols-1 md:grid-cols-7 gap-1.5 md:items-stretch">
       {Array.from({ length: 7 }, (_, c) => {
         const day = addDays(weekStart, c);
         const onDay = entries.filter((i) => occursOn(i, day));
@@ -157,16 +157,16 @@ export function CalendarGrid({
             type="button"
             onClick={() => onSelect(day)}
             aria-pressed={isSelected}
-            className={`text-left rounded-xl border border-gray-200 p-2.5 ${
-              compact ? "min-h-[44px] md:min-h-0 md:h-full" : "min-h-[72px] md:min-h-[240px]"
-            } flex md:flex-col gap-2 md:gap-1.5 hover:bg-gray-50 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring`}
+            className={`text-left rounded-xl border border-gray-200 ${
+              compact ? "p-2 min-h-[40px] md:min-h-[72px]" : "p-2.5 min-h-[56px] md:min-h-[96px]"
+            } flex md:flex-col gap-2 md:gap-1 hover:bg-gray-50 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring`}
             style={isSelected ? { borderColor: ring, boxShadow: `inset 0 0 0 0.5px ${ring}` } : undefined}
           >
-            <span className="flex md:flex-col items-baseline md:items-start gap-1.5 md:gap-0 w-16 md:w-auto flex-shrink-0">
+            <span className="flex items-center gap-1.5 w-16 md:w-auto flex-shrink-0">
               <span className="text-xs text-gray-500">{WEEKDAY_NAMES[c]}</span>
               <span
                 className={`text-sm font-semibold ${
-                  isToday ? "md:size-7 md:rounded-full md:bg-gray-900 md:text-white md:flex md:items-center md:justify-center" : "text-gray-900"
+                  isToday ? "size-6 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs" : "text-gray-900"
                 }`}
               >
                 {day.getDate()}
@@ -174,9 +174,9 @@ export function CalendarGrid({
             </span>
             <span className="flex-1 min-w-0 space-y-1">
               {onDay.map((i) => (
-                <span key={`${i.family}-${i.id}`} className="flex items-center gap-1.5 min-w-0">
-                  <ItemDot type={i.family} completed={i.completed} size={6} />
-                  <span className={`text-xs truncate ${i.completed ? "text-gray-400" : "text-gray-700"}`}>{i.title}</span>
+                <span key={`${i.family}-${i.id}`} className="flex items-start gap-1.5 min-w-0">
+                  <ItemDot type={i.family} completed={i.completed} size={6} className="mt-[5px]" />
+                  <span className={`text-xs leading-4 break-words min-w-0 ${i.completed ? "text-gray-400" : "text-gray-700"}`}>{i.title}</span>
                 </span>
               ))}
             </span>
@@ -227,7 +227,7 @@ export function CalendarGrid({
         </div>
       </div>
       {/* Same footprint in Week and Month */}
-      <div className={compact ? "md:min-h-[var(--cal-h)]" : "md:min-h-[22rem]"} style={footprint ? ({ "--cal-h": `${footprint}px` } as CSSProperties) : undefined}>{mode === "month" ? monthGrid() : weekGrid()}</div>
+      <div className={mode === "week" ? "" : compact ? "md:min-h-[var(--cal-h)]" : "md:min-h-[22rem]"} style={footprint ? ({ "--cal-h": `${footprint}px` } as CSSProperties) : undefined}>{mode === "month" ? monthGrid() : weekGrid()}</div>
       <div className="flex sm:hidden justify-between mt-2">{arrows}</div>
     </div>
   );
