@@ -22,3 +22,7 @@ export function AllActionItems() {
 export function AllActivity() {
   return <Placeholder title="All activity" />;
 }
+
+export function AllShared() {
+  return <Placeholder title="Everything shared" />;
+}

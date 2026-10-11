@@ -23,6 +23,21 @@ export interface ActivityEntry {
   at: string;
 }
 
+/** Something shared between the user and someone else (Shared tab). */
+export interface ShareEntry {
+  id: string;
+  /** "with-you": someone shared with the user; "by-you": the user shared with someone */
+  direction: "with-you" | "by-you";
+  /** Who shared, or who it was shared with */
+  person: string;
+  /** What was shared, e.g. "Food & Drink preferences" */
+  what: string;
+  /** Where View goes (shares with the user only) */
+  href?: string;
+  /** ISO timestamp */
+  at: string;
+}
+
 export type SnoozeOption = "later-today" | "tomorrow" | "next-week";
 
 // ─── Demo data ────────────────────────────────────────────────────────────────
@@ -46,6 +61,24 @@ const SEED_ACTIVITY: { look: ItemLook; text: string; ago: number }[] = [
   { look: { type: "people", icon: "person" },        text: "Updated your Gift Preferences",    ago: 2 * DAY },
 ];
 
+/** Seeded shares, as offsets back from the first time the app loads. */
+const SEED_SHARES: (Omit<ShareEntry, "id" | "at"> & { ago: number; seen?: boolean })[] = [
+  { direction: "with-you", person: "Sarah",   what: "Food & Drink preferences", href: "/app/people/1/food-drink",       ago: 2 * 60 * MINUTE },
+  { direction: "with-you", person: "Emma",    what: "Gift Preferences",         href: "/app/people/3/gift-preferences", ago: DAY + 3 * 60 * MINUTE },
+  { direction: "by-you",   person: "Michael", what: "Gift Preferences",                                                 ago: 3 * DAY },
+  { direction: "with-you", person: "Michael", what: "Important Dates",          href: "/app/people/2/important-dates",  ago: 4 * DAY, seen: true },
+  { direction: "by-you",   person: "Sarah",   what: "Allergies",                                                        ago: 5 * DAY },
+];
+
+function seedShares(now: number): Pick<StoredState, "shares" | "sharesSeen"> {
+  const shares = SEED_SHARES.map(({ ago, seen: _seen, ...rest }, i) => ({
+    ...rest,
+    id: `share-${i}`,
+    at: new Date(now - ago).toISOString(),
+  }));
+  return { shares, sharesSeen: SEED_SHARES.flatMap((x, i) => (x.seen ? [`share-${i}`] : [])) };
+}
+
 /** Entries saved before the item-type config used named appearances. */
 const LEGACY_LOOKS: Record<string, ItemLook> = {
   "plan": { type: "plan" },
@@ -62,6 +95,8 @@ const LEGACY_LOOKS: Record<string, ItemLook> = {
 function migrate(s: StoredState): StoredState {
   return {
     ...s,
+    // State saved before the Shared tab existed
+    ...(s.shares ? {} : seedShares(Date.now())),
     activity: s.activity.map((a) => {
       const legacy = (a as ActivityEntry & { appearance?: string }).appearance;
       return a.look ? a : { ...a, look: LEGACY_LOOKS[legacy ?? ""] ?? { type: "people" } };
@@ -77,6 +112,9 @@ interface StoredState {
   dismissed: string[];
   snoozedUntil: Record<string, string>;
   activity: ActivityEntry[];
+  shares: ShareEntry[];
+  /** Shares with the user that they've viewed */
+  sharesSeen: string[];
 }
 
 function seedState(): StoredState {
@@ -90,6 +128,7 @@ function seedState(): StoredState {
       text: a.text,
       at: new Date(now - a.ago).toISOString(),
     })),
+    ...seedShares(now),
   };
 }
 
@@ -156,6 +195,28 @@ export function logActivity(look: ItemLook, text: string) {
   update((s) => ({ ...s, activity: [entry, ...s.activity] }));
 }
 
+/** The user shared something with someone: shows under "You shared" and in Timeline. */
+export function recordShare(person: string, what: string) {
+  const entry: ShareEntry = {
+    id: `share-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    direction: "by-you",
+    person,
+    what,
+    at: new Date().toISOString(),
+  };
+  update((s) => ({ ...s, shares: [entry, ...s.shares] }));
+  logActivity({ type: "people", icon: "share" }, `Shared ${what} with ${person}`);
+}
+
+export function markShareSeen(id: string) {
+  update((s) => (s.sharesSeen.includes(id) ? s : { ...s, sharesSeen: [...s.sharesSeen, id] }));
+}
+
+/** Hides a share with the user (shares by the user stay as a record). */
+export function dismissShare(id: string) {
+  update((s) => ({ ...s, dismissed: [...s.dismissed, id], sharesSeen: [...s.sharesSeen, id] }));
+}
+
 export function logReminderActivity(verb: string, title: string) {
   logActivity({ type: "reminder", icon: reminderIconFor(title) }, `${verb} ${title}`);
 }
@@ -182,7 +243,11 @@ export function useNotifications() {
   }, []);
 
   const activity = [...s.activity].sort((a, b) => b.at.localeCompare(a.at));
-  return { actionItems: openActionItems(s, now), activity, now };
+  const dismissed = new Set(s.dismissed);
+  const shares = [...s.shares].filter((x) => !dismissed.has(x.id)).sort((a, b) => b.at.localeCompare(a.at));
+  const seen = new Set(s.sharesSeen);
+  const unseenShares = shares.filter((x) => x.direction === "with-you" && !seen.has(x.id)).length;
+  return { actionItems: openActionItems(s, now), activity, shares, isShareSeen: (id: string) => seen.has(id), unseenShares, now };
 }
 
 // ─── Formatting ───────────────────────────────────────────────────────────────

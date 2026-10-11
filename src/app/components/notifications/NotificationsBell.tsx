@@ -3,8 +3,12 @@ import { Link, useNavigate } from "react-router";
 import { Bell, ChevronDown, ChevronRight, Clock, X } from "lucide-react";
 import { reminderIconFor, type ItemLook } from "../../config/itemTypes";
 import { ItemBadge } from "../ItemBadge";
+import { avatarFor } from "../../utils/peopleDirectory";
 import {
   dismissActionItem,
+  dismissShare,
+  markShareSeen,
+  recordShare,
   formatActionDate,
   formatRelativeTime,
   logActivity,
@@ -12,6 +16,7 @@ import {
   useNotifications,
   type ActionItem,
   type ActivityEntry,
+  type ShareEntry,
   type SnoozeOption,
 } from "../../utils/notificationStore";
 
@@ -186,7 +191,7 @@ function ActionItemRow({ item, onNavigate }: { item: ActionItem; onNavigate: (to
                 className={primaryBtn}
                 onClick={() => {
                   dismissActionItem(item.id);
-                  logActivity({ type: "people", icon: "share" }, `Shared ${item.surveyTitle} with ${item.requesterName ?? "a friend"}`);
+                  recordShare(item.requesterName ?? "a friend", item.surveyTitle);
                 }}
               >
                 {item.requesterName ? `Share with ${item.requesterName}` : "Share with them"}
@@ -224,6 +229,112 @@ function ActivityRow({ entry, now }: { entry: ActivityEntry; now: number }) {
   return <Row compact look={entry.look} title={entry.text} meta={formatRelativeTime(entry.at, now)} />;
 }
 
+function PersonCircle({ name }: { name: string }) {
+  const a = avatarFor(name);
+  return (
+    <span
+      aria-hidden
+      className={`size-7 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0 ${a.className}`}
+    >
+      {a.initials}
+    </span>
+  );
+}
+
+function ShareRow({
+  entry,
+  seen,
+  now,
+  onNavigate,
+}: {
+  entry: ShareEntry;
+  seen: boolean;
+  now: number;
+  onNavigate: (to: string) => void;
+}) {
+  const withYou = entry.direction === "with-you";
+  const isNew = withYou && !seen;
+  return (
+    <li className="flex gap-3 py-3 border-b border-gray-100 last:border-b-0">
+      <PersonCircle name={entry.person} />
+      <div className="flex-1 min-w-0">
+        <p className="text-[14px] leading-5 text-gray-900">
+          {withYou ? (
+            <>
+              {entry.person} shared <span className="font-semibold">{entry.what}</span> with you
+            </>
+          ) : (
+            <>
+              You shared <span className="font-semibold">{entry.what}</span> with {entry.person}
+            </>
+          )}
+        </p>
+        <p className="text-[12px] leading-4 mt-0.5 text-gray-400">{formatRelativeTime(entry.at, now)}</p>
+        {withYou && (
+          <div className="flex flex-wrap items-center gap-2 mt-2.5">
+            <button
+              type="button"
+              className={isNew ? primaryBtn : outlineBtn}
+              onClick={() => {
+                markShareSeen(entry.id);
+                if (entry.href) onNavigate(entry.href);
+              }}
+            >
+              View
+            </button>
+            {isNew && (
+              <button type="button" className={outlineBtn} onClick={() => dismissShare(entry.id)}>
+                Dismiss
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+      {isNew && <span className="mt-2 size-2 rounded-full bg-amber-400 flex-shrink-0" aria-label="New" />}
+    </li>
+  );
+}
+
+function SharedTab({
+  shares,
+  isSeen,
+  now,
+  onNavigate,
+}: {
+  shares: ShareEntry[];
+  isSeen: (id: string) => boolean;
+  now: number;
+  onNavigate: (to: string) => void;
+}) {
+  const withYou = shares.filter((x) => x.direction === "with-you");
+  const byYou = shares.filter((x) => x.direction === "by-you");
+  if (!shares.length) {
+    return (
+      <div className="py-10 text-center">
+        <p className="text-[15px] text-gray-900">Nothing shared yet</p>
+        <p className="text-[13px] text-gray-400 mt-1">When you or your people share something, it shows up here</p>
+      </div>
+    );
+  }
+  const section = (label: string, rows: ShareEntry[]) =>
+    rows.length > 0 && (
+      <section className="first:mt-0 mt-3">
+        <h3 className="text-[12px] text-gray-500">{label}</h3>
+        <ul>
+          {rows.map((entry) => (
+            <ShareRow key={entry.id} entry={entry} seen={isSeen(entry.id)} now={now} onNavigate={onNavigate} />
+          ))}
+        </ul>
+      </section>
+    );
+  return (
+    <>
+      {section("Shared with you", withYou)}
+      {section("You shared", byYou)}
+    </>
+  );
+}
+
 function FooterLink({ to, label, onClick }: { to: string; label: string; onClick: () => void }) {
   return (
     <Link
@@ -239,7 +350,7 @@ function FooterLink({ to, label, onClick }: { to: string; label: string; onClick
 
 // ─── Panel ────────────────────────────────────────────────────────────────────
 
-type Tab = "action" | "timeline";
+type Tab = "action" | "shared" | "timeline";
 
 interface Position {
   top: number;
@@ -279,7 +390,7 @@ function NotificationsPanel({
   panelRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const navigate = useNavigate();
-  const { actionItems, activity, now } = useNotifications();
+  const { actionItems, activity, shares, isShareSeen, unseenShares, now } = useNotifications();
   const [tab, setTab] = useState<Tab>("action");
   const [pos, setPos] = useState<Position>(() => computePosition(anchor));
 
@@ -336,9 +447,10 @@ function NotificationsPanel({
         </div>
 
         {/* Segmented control */}
-        <div role="tablist" className="mt-3 grid grid-cols-2 p-1 bg-gray-100 rounded-lg">
+        <div role="tablist" className="mt-3 grid grid-cols-3 p-1 bg-gray-100 rounded-lg">
           {([
             ["action", "Action items"],
+            ["shared", "Shared"],
             ["timeline", "Timeline"],
           ] as const).map(([value, label]) => (
             <button
@@ -347,11 +459,14 @@ function NotificationsPanel({
               role="tab"
               aria-selected={tab === value}
               onClick={() => setTab(value)}
-              className={`h-8 rounded-md text-[13px] transition-colors ${
+              className={`h-8 rounded-md text-[13px] transition-colors inline-flex items-center justify-center gap-1.5 ${
                 tab === value ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-900"
               }`}
             >
               {label}
+              {value === "shared" && unseenShares > 0 && (
+                <span className="size-1.5 rounded-full bg-amber-400" aria-label={`${unseenShares} new`} />
+              )}
             </button>
           ))}
         </div>
@@ -376,6 +491,8 @@ function NotificationsPanel({
                 </ul>
               </>
             )
+          ) : tab === "shared" ? (
+            <SharedTab shares={shares} isSeen={isShareSeen} now={now} onNavigate={go} />
           ) : (
             <ul>
               {activity.map((entry) => (
@@ -389,6 +506,9 @@ function NotificationsPanel({
         {tab === "action" && count > 0 && (
           <FooterLink to="/app/notifications/action-items" label="View all action items" onClick={onClose} />
         )}
+        {tab === "shared" && shares.length > 0 && (
+          <FooterLink to="/app/notifications/shared" label="View all shared" onClick={onClose} />
+        )}
         {tab === "timeline" && (
           <FooterLink to="/app/notifications/activity" label="View all activity" onClick={onClose} />
         )}
@@ -401,11 +521,12 @@ function NotificationsPanel({
 
 export function NotificationsBell() {
   const [open, setOpen] = useState(false);
-  const { actionItems } = useNotifications();
+  const { actionItems, unseenShares } = useNotifications();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const hasItems = actionItems.length > 0;
+  // New shares count as something waiting, like action items.
+  const hasItems = actionItems.length > 0 || unseenShares > 0;
 
   const close = (returnFocus = false) => {
     setOpen(false);
