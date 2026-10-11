@@ -32,6 +32,9 @@
   --chart-5: oklch(0.769 0.188 70.08);
   --radius: 0.625rem;
   --request-card-radius: 0.75rem;
+  /* Warm neutral for the Today panel (a UI surface, not an item color) */
+  --surface-warm: #fcf8f2;
+  --surface-warm-border: #efe4d4;
   --home-attention-column-width: 22.5rem;
   --home-calendar-column-width: 20rem;
   --home-column-gap: 1.75rem;

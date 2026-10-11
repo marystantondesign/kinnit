@@ -135,7 +135,21 @@ function ActionItemRow({ item, onNavigate }: { item: ActionItem; onNavigate: (to
           look={{ type: "reminder", icon: reminderIconFor(item.title) }}
           title={item.title}
           meta={date}
-          actions={<SnoozeButton itemId={item.id} />}
+          actions={
+            <>
+              <button
+                type="button"
+                className={primaryBtn}
+                onClick={() => {
+                  dismissActionItem(item.id);
+                  logActivity({ type: "reminder", icon: reminderIconFor(item.title) }, `Completed ${item.title}`);
+                }}
+              >
+                Complete
+              </button>
+              <SnoozeButton itemId={item.id} />
+            </>
+          }
         />
       );
 

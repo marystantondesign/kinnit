@@ -30,6 +30,7 @@ import { IntegrationsIndex } from "./pages/IntegrationsIndex";
 import { IntegrationConnect } from "./pages/IntegrationConnect";
 import { IntegrationManage } from "./pages/IntegrationManage";
 import { AllActionItems, AllActivity } from "./pages/NotificationsPlaceholder";
+import { Discoveries } from "./pages/Discoveries";
 import { ErrorPage } from "./pages/ErrorPage";
 
 export const router = createBrowserRouter([
@@ -80,6 +81,7 @@ export const router = createBrowserRouter([
       { path: "settings/integrations", element: <IntegrationsIndex /> },
       { path: "settings/integrations/:integrationId/connect", element: <IntegrationConnect /> },
       { path: "settings/integrations/:integrationId/manage", element: <IntegrationManage /> },
+      { path: "discoveries", element: <Discoveries /> },
       { path: "notifications/action-items", element: <AllActionItems /> },
       { path: "notifications/activity", element: <AllActivity /> },
     ],

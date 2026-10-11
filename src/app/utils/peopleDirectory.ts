@@ -13,7 +13,7 @@ export interface DirectoryPerson {
 }
 
 const PEOPLE: Omit<DirectoryPerson, "firstName">[] = [
-  { id: "1",  name: "Sarah Johnson",  relationship: "Friend",   birthday: "12-14" , avatarClass: "bg-amber-100 text-amber-700" },
+  { id: "1",  name: "Sarah Johnson",  relationship: "Friend",   birthday: "04-15" , avatarClass: "bg-amber-100 text-amber-700" },
   { id: "2",  name: "Michael Chen",   relationship: "Partner",  birthday: "11-03" , avatarClass: "bg-blue-100 text-blue-700" },
   { id: "3",  name: "Emma Davis",     relationship: "Sister" , avatarClass: "bg-violet-100 text-violet-700" },
   { id: "4",  name: "David Martinez", relationship: "Coworker" , avatarClass: "bg-cyan-100 text-cyan-700" },
@@ -25,8 +25,8 @@ const PEOPLE: Omit<DirectoryPerson, "firstName">[] = [
   { id: "10", name: "Elena Garcia",   relationship: "Friend" , avatarClass: "bg-rose-100 text-rose-700" },
   { id: "11", name: "Marco Rossi",    relationship: "Friend" , avatarClass: "bg-red-100 text-red-700" },
   { id: "12", name: "Aiko Tanaka",    relationship: "Friend" , avatarClass: "bg-lime-100 text-lime-700" },
-  { id: "13", name: "Sylvia Park",    relationship: "Friend" , avatarClass: "bg-purple-100 text-purple-700" },
-  { id: "14", name: "John Walker",    relationship: "Friend" , avatarClass: "bg-emerald-100 text-emerald-700" },
+  { id: "13", name: "Sylvia Park",    relationship: "Friend",   birthday: "11-18" , avatarClass: "bg-purple-100 text-purple-700" },
+  { id: "14", name: "John Walker",    relationship: "Friend",   birthday: "12-22" , avatarClass: "bg-emerald-100 text-emerald-700" },
   { id: "15", name: "Leah Kim",       relationship: "Friend" , avatarClass: "bg-sky-100 text-sky-700" },
   { id: "16", name: "Chris Morgan",   relationship: "Friend",   birthday: "10-22" , avatarClass: "bg-yellow-100 text-yellow-700" },
 ];

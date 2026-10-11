@@ -79,6 +79,17 @@ export const ITEM_FAMILIES: Record<ItemFamily, { label: string; colors: FamilyCo
   people:    { label: "People",    colors: { fill: "#f3f4f6", icon: "#374151", dot: "#6b7280" } }, // neutral gray
 };
 
+/**
+ * Surfaces for the Discoveries card deck (discovery family). Pale peach face
+ * with lavender/pink backing cards, per the dashboard design.
+ */
+export const DISCOVERY_SURFACES = {
+  face: "#fdf1e6",
+  faceBorder: "#f6dcc6",
+  backLavender: "#ece6fb",
+  backPink: "#fbe4ee",
+} as const;
+
 // ─── Situation → icon ─────────────────────────────────────────────────────────
 
 export const ITEM_ICONS = {

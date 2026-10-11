@@ -20,6 +20,8 @@ export interface Scheduled {
   end?: string;
   recurrence?: Recurrence;
   completed?: boolean;
+  /** Display time, e.g. "9:00 AM" */
+  time?: string;
 }
 
 export interface ReminderItem extends Scheduled {
@@ -54,6 +56,7 @@ export interface OccasionItem extends Scheduled {
 // ─── Demo data ────────────────────────────────────────────────────────────────
 
 const DEMO_REMINDERS: Omit<ReminderItem, "icon">[] = [
+  { id: "9", title: "Call Mom", about: "Mom", people: [], start: "2026-09-06", recurrence: "weekly", time: "9:00 AM", href: "/app/reminders/9" },
   { id: "1", title: "Send birthday card", about: "Sarah Johnson", people: ["Sarah Johnson"], start: "2026-10-13", linked: "Sarah's Birthday", href: "/app/reminders/1" },
   { id: "2", title: "Check in weekly", about: "Emma Davis", people: ["Emma Davis"], start: "2026-10-12", recurrence: "weekly", linked: "Emma's Surgery", href: "/app/reminders/2" },
   { id: "6", title: "Call James about the trip", about: "James Wilson", people: ["James Wilson"], start: "2026-10-14", href: "/app/reminders/6" },
@@ -66,7 +69,7 @@ const DEMO_PLANS: Omit<PlanItem, "icon">[] = [
   { id: "1", title: "Birthday Dinner Planning", status: "active", planFor: "Sarah Johnson", leader: "you", participants: ["You", "Michael Chen"], start: "2026-04-15", linked: "Sarah's Birthday", href: "/app/plans/1" },
   { id: "4", title: "Recovery Support Schedule", status: "active", planFor: "Emma Davis", leader: "you", participants: ["You", "Sarah Johnson", "Michael Chen"], linked: "Emma's Surgery", href: "/app/plans/4" },
   { id: "5", title: "Mexico Trip Planning", status: "draft", planFor: "a group", leader: "Michael Chen", participants: ["You", "Michael Chen", "Sarah Johnson", "Emma Davis"], linked: "Group Trip to Mexico", href: "/app/plans/5" },
-  { id: "6", title: "Lake House Weekend prep", status: "active", leader: "you", participants: ["You", "James Wilson", "Lisa Anderson"], start: "2026-10-10", href: "/app/plans/6" },
+  { id: "6", title: "Lake House Weekend prep", status: "active", leader: "you", participants: ["You", "James Wilson", "Lisa Anderson"], start: "2026-10-10", end: "2026-10-11", time: "2:00 PM", href: "/app/plans/6" },
   { id: "holiday-kickoff", title: "Holiday Planning Kickoff", status: "draft", leader: "you", participants: ["You", "Michael Chen"], start: "2026-11-14", href: "/app/plans/holiday-kickoff" },
 ];
 

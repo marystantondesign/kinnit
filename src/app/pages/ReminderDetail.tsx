@@ -27,6 +27,7 @@ const mockParticipants = {
   "5": { id: "5", name: "Lisa Anderson", initials: "LA" },
   "6": { id: "6", name: "James Wilson", initials: "JW" },
   "9": { id: "9", name: "Priya Patel", initials: "PP" },
+  mom: { id: "mom", name: "Mom", initials: "MO" },
 };
 
 const mockReminders: Record<string, ReminderData> = {
@@ -105,6 +106,15 @@ const mockReminders: Record<string, ReminderData> = {
     notes: "For hosting the book club.",
     status: "completed",
     createdDate: "September 28, 2026",
+  },
+  "9": {
+    id: "9",
+    action: "Call Mom",
+    person: mockParticipants.mom,
+    timing: "Sundays, 9:00 AM",
+    notes: "Weekly catch-up call.",
+    status: "upcoming",
+    createdDate: "September 1, 2026",
   },
 };
 
