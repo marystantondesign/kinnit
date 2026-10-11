@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { NotificationsBell } from "../components/notifications/NotificationsBell";
 import { TalkToKinnitProvider } from "../components/talk/TalkToKinnit";
+import { ItemBadge } from "../components/ItemBadge";
 
 // ─── Search data ─────────────────────────────────────────────────────────────
 
@@ -99,11 +100,7 @@ function typeLabel(type: SearchResult["type"]) {
 }
 
 function ResultIcon({ type }: { type: SearchResult["type"] }) {
-  const cls = "flex-shrink-0 text-gray-400";
-  if (type === "occasion") return <Calendar size={14} className={cls} />;
-  if (type === "plan")     return <Flag     size={14} className={cls} />;
-  if (type === "reminder") return <Bell     size={14} className={cls} />;
-  return                          <User     size={14} className={cls} />;
+  return <ItemBadge type={type === "person" ? "people" : type} size="xs" />;
 }
 
 function ResultRow({ r, onClose }: { r: SearchResult; onClose: () => void }) {

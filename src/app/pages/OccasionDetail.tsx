@@ -1,6 +1,8 @@
 import { useParams, Link } from "react-router";
 import { useState, useEffect } from "react";
 import { getOccasion, type OccasionData } from "../utils/occasionStorage";
+import { ItemBadge, itemStripeStyle } from "../components/ItemBadge";
+import { familyColors, planIconFor, reminderIconFor } from "../config/itemTypes";
 import { getPlan } from "../utils/planStorage";
 import { Edit, Share2 } from "lucide-react";
 
@@ -140,21 +142,6 @@ const MOCK_PREFERENCES: Record<string, Record<string, string[]>> = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function typePillStyle(type: string): string {
-  const map: Record<string, string> = {
-    "Birthday":                    "bg-blue-50 text-blue-600",
-    "Anniversary":                 "bg-purple-50 text-purple-600",
-    "Illness or Recovery":         "bg-amber-50 text-amber-700",
-    "Loss or Grief":               "bg-gray-100 text-gray-600",
-    "Trip or Travel":              "bg-teal-50 text-teal-700",
-    "Major Milestone":             "bg-green-50 text-green-700",
-    "Gathering or Dinner":         "bg-pink-50 text-pink-600",
-    "Breakup or Support":          "bg-orange-50 text-orange-700",
-    "Living Will or End-of-Life":  "bg-gray-100 text-gray-600",
-  };
-  return map[type] ?? "bg-muted text-muted-foreground";
-}
-
 function getRelevantPreferences(
   occasionType: string,
   personId: string
@@ -282,7 +269,10 @@ export function OccasionDetail() {
       <div className="flex items-start justify-between gap-4 mb-6">
         <div className="flex-1 min-w-0">
           {/* Type pill */}
-          <span className={`inline-block text-[11px] font-medium px-2.5 py-0.5 rounded-full leading-tight ${typePillStyle(occasion.type)}`}>
+          <span
+            className="inline-block text-[11px] font-medium px-2.5 py-0.5 rounded-full leading-tight"
+            style={{ background: familyColors("occasion").fill, color: familyColors("occasion").icon }}
+          >
             {occasion.type}
           </span>
           {/* Title */}
@@ -403,8 +393,10 @@ export function OccasionDetail() {
                   <Link
                     key={plan.id}
                     to={`/app/plans/${plan.id}`}
-                    className="flex items-center gap-3 p-3 border border-border bg-card rounded-lg border-l-[3px] border-l-green-500 hover:bg-accent transition-colors"
+                    className="flex items-center gap-3 p-3 border border-border bg-card rounded-lg hover:bg-accent transition-colors"
+                    style={itemStripeStyle("plan")}
                   >
+                    <ItemBadge type="plan" icon={planIconFor(plan.title)} size="sm" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{plan.title}</p>
                       {(plan.leader || plan.status) && (
@@ -414,24 +406,22 @@ export function OccasionDetail() {
                         </p>
                       )}
                     </div>
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700 flex-shrink-0">
-                      Plan
-                    </span>
+
                   </Link>
                 ))}
                 {reminders.map((reminder) => (
                   <Link
                     key={reminder.id}
                     to={`/app/reminders/${reminder.id}`}
-                    className="flex items-center gap-3 p-3 border border-border bg-card rounded-lg border-l-[3px] border-l-amber-400 hover:bg-accent transition-colors"
+                    className="flex items-center gap-3 p-3 border border-border bg-card rounded-lg hover:bg-accent transition-colors"
+                    style={itemStripeStyle("reminder")}
                   >
+                    <ItemBadge type="reminder" icon={reminderIconFor(reminder.title)} size="sm" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{reminder.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{reminder.timing}</p>
                     </div>
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 flex-shrink-0">
-                      Reminder
-                    </span>
+
                   </Link>
                 ))}
               </div>

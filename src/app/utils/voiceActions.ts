@@ -7,6 +7,7 @@ import { sendPlanInvitation } from "./invitationStore";
 import { findPerson, displayName } from "./peopleDirectory";
 import type { DraftItem } from "./talkClient";
 import type { TalkPerson } from "../../shared/talk";
+import { occasionIconFor, planIconFor, reminderIconFor } from "../config/itemTypes";
 
 /** Fired after Talk to Kinnit saves items, so open pages can refresh. */
 export const DATA_CHANGED_EVENT = "kinnit:data-changed";
@@ -52,6 +53,7 @@ export function commitDraftItems(items: ConfirmedItem[]) {
         id: `occasion-${stamp}-${n}`,
         title: item.title,
         type: /birthday/i.test(item.title) ? "Birthday" : /anniversary/i.test(item.title) ? "Anniversary" : "Other",
+        kind: occasionIconFor(undefined, item.title),
         people: item.people.map(personRef),
         status: "active",
         timing: { mode: "single", singleDate: item.date ?? undefined },
@@ -63,7 +65,7 @@ export function commitDraftItems(items: ConfirmedItem[]) {
       };
       saveOccasion(occasion);
       newOccasions.set(titleKey(item.title), occasion);
-      logActivity("occasion", `Added ${item.title}`);
+      logActivity({ type: "occasion", icon: occasion.kind }, `Added ${item.title}`);
     });
 
   const linkedOccasionId = (item: DraftItem) => {
@@ -78,6 +80,8 @@ export function commitDraftItems(items: ConfirmedItem[]) {
       saveReminder({
         id: `voice-reminder-${stamp}-${n}`,
         action: item.title,
+        kind: reminderIconFor(item.title),
+        personName: item.people[0]?.name,
         date: item.date ?? "",
         notes: notes || undefined,
         recurrence: "once",
@@ -95,6 +99,7 @@ export function commitDraftItems(items: ConfirmedItem[]) {
       const plan: PlanData = {
         id: planId,
         title: item.title,
+        kind: planIconFor(`${item.title} ${item.detail ?? ""}`),
         description: item.detail ?? undefined,
         status: "active",
         linkedOccasionIds: occasionId ? [occasionId] : [],
@@ -107,7 +112,7 @@ export function commitDraftItems(items: ConfirmedItem[]) {
         updatedAt: now,
       };
       savePlan(plan);
-      logActivity("plan", `Created ${item.title}`);
+      logActivity({ type: "plan", icon: plan.kind }, `Created ${item.title}`);
 
       // Point a newly created occasion back at its plan.
       const created = [...newOccasions.values()].find((o) => o.id === occasionId);
@@ -128,7 +133,7 @@ export function commitDraftItems(items: ConfirmedItem[]) {
               toName: person.name,
               inviterName: USER_NAME,
             });
-            logActivity("plan-invitation", `Invited ${person.firstName} to ${item.title}`);
+            logActivity({ type: "plan", icon: "invite" }, `Invited ${person.firstName} to ${item.title}`);
           });
       }
     }
@@ -137,7 +142,7 @@ export function commitDraftItems(items: ConfirmedItem[]) {
       const person = item.people.find((p) => p.role === "about") ?? item.people[0];
       if (!person) return;
       addNote(personRef(person).id, item.title);
-      logActivity("private-note", `Added a private note about ${displayName(person.name)}`);
+      logActivity({ type: "people", icon: "note" }, `Added a private note about ${displayName(person.name)}`);
     }
   });
 

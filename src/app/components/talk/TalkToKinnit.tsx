@@ -23,7 +23,8 @@ import {
   User,
   X,
 } from "lucide-react";
-import { getEntityAppearance, type EntityKind } from "../../utils/entityAppearance";
+import { familyColors, type ItemFamily } from "../../config/itemTypes";
+import { ItemDot } from "../ItemBadge";
 import { parseTranscript, toISODate, type DraftItem } from "../../utils/talkClient";
 import { commitDraftItems } from "../../utils/voiceActions";
 import { PEOPLE_DIRECTORY, displayName } from "../../utils/peopleDirectory";
@@ -70,11 +71,12 @@ interface ParseState {
 
 type Phase = "listening" | "review";
 
-const KIND_FOR: Record<TalkItem["type"], EntityKind> = {
+/** Item type → color family (notes are about people). */
+const FAMILY_FOR: Record<TalkItem["type"], ItemFamily> = {
   occasion: "occasion",
   reminder: "reminder",
   plan: "plan",
-  note: "private-note",
+  note: "people",
 };
 
 function typeLabel(item: DraftItem) {
@@ -715,7 +717,7 @@ function ReviewView({
             </button>
           </div>
           {incomplete.length > 0 && (
-            <p className="mt-2 text-sm text-amber-800" role="status">
+            <p className="mt-2 text-sm" style={{ color: familyColors(FAMILY_FOR[incomplete[0].type]).icon }} role="status">
               {incompleteMessage(incomplete)}
             </p>
           )}
@@ -768,12 +770,16 @@ function Seg({ first, children }: { first?: boolean; children: ReactNode }) {
 const chip =
   "h-8 px-3.5 rounded-full border border-gray-200 bg-white text-[13px] text-gray-900 hover:bg-gray-50 transition-colors";
 
-function WhenChips({ onPick }: { onPick: (iso: string) => void }) {
+function WhenChips({ family, onPick }: { family: ItemFamily; onPick: (iso: string) => void }) {
+  const colors = familyColors(family);
   const [picking, setPicking] = useState(false);
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2">
       <Calendar size={14} className="text-gray-500" />
-      <span className="h-8 px-3.5 rounded-full border border-dashed border-amber-400 bg-amber-50 text-[13px] text-amber-800 flex items-center">
+      <span
+        className="h-8 px-3.5 rounded-full border border-dashed text-[13px] flex items-center"
+        style={{ borderColor: colors.dot, background: colors.fill, color: colors.icon }}
+      >
         When?
       </span>
       <button type="button" className={chip} onClick={() => onPick(quickDate("today"))}>Today</button>
@@ -850,7 +856,7 @@ function DraftCard({
   const [title, setTitle] = useState(item.title);
   const [detail, setDetail] = useState(item.detail ?? "");
   const [date, setDate] = useState(item.date ?? "");
-  const { dotClass } = getEntityAppearance(KIND_FOR[item.type]);
+  const family = FAMILY_FOR[item.type];
   const waitingOnDate = checked && needsDate(item);
   const canInvite = invitees(item);
   const names = (role: TalkPerson["role"]) =>
@@ -909,9 +915,8 @@ function DraftCard({
 
   return (
     <div
-      className={`relative rounded-xl border p-4 flex gap-3 transition-colors ${
-        waitingOnDate ? "border-amber-300" : "border-gray-200"
-      } ${checked ? "" : "opacity-60"}`}
+      className={`relative rounded-xl border border-gray-200 p-4 flex gap-3 transition-colors ${checked ? "" : "opacity-60"}`}
+      style={waitingOnDate ? { borderColor: familyColors(family).dot } : undefined}
     >
       <button
         type="button"
@@ -928,7 +933,7 @@ function DraftCard({
 
       <div className="flex-1 min-w-0">
         <p className={`flex items-center gap-1.5 text-[13px] text-gray-500 ${showDelete ? "pr-20" : "pr-10"}`}>
-          <span className={`w-2 h-2 rounded-full ${dotClass}`} />
+          <ItemDot type={family} />
           {typeLabel(item)}
         </p>
 
@@ -989,7 +994,7 @@ function DraftCard({
             {item.detail && <p className="text-[14px] text-gray-500">{item.detail}</p>}
 
             {needsDate(item) ? (
-              <WhenChips onPick={(iso) => onPatch({ date: iso })} />
+              <WhenChips family={FAMILY_FOR[item.type]} onPick={(iso) => onPatch({ date: iso })} />
             ) : (
               <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1 text-[13px] text-gray-500">{details}</div>
             )}

@@ -1,20 +1,7 @@
 import { Link } from "react-router";
-import {
-  Heart,
-  Wallet,
-  ScrollText,
-  Leaf,
-  Droplets,
-  Flame,
-  Music,
-  Users,
-  Gift,
-  Globe,
-  Mail,
-  Mic,
-  ChevronRight,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronRight } from "lucide-react";
+import { ItemBadge } from "../components/ItemBadge";
+import type { ItemIconKey } from "../config/itemTypes";
 
 // Person type mirrors the People directory object model
 interface Person {
@@ -33,7 +20,8 @@ const responsibleParties: Person[] = [
 interface LegacyItem {
   id: string;
   label: string;
-  icon: LucideIcon;
+  /** Legacy situation icon; general when omitted */
+  icon?: ItemIconKey<"legacy">;
   href?: string;
   isResponsibleParties?: boolean;
 }
@@ -51,9 +39,9 @@ const groups: LegacyGroup[] = [
     title: "Decisions & who decides",
     subtitle: "Healthcare, financial, and estate authority",
     items: [
-      { id: "healthcare-wishes", label: "Healthcare wishes & decision-maker", icon: Heart, href: "/app/about-me/life-legacy/healthcare-wishes" },
-      { id: "financial-affairs", label: "Financial affairs & decision-maker", icon: Wallet, href: "/app/about-me/life-legacy/financial-affairs" },
-      { id: "will-estate", label: "Will & estate reference", icon: ScrollText, href: "/app/about-me/life-legacy/will-estate" },
+      { id: "healthcare-wishes", label: "Healthcare wishes & decision-maker", icon: "healthcare", href: "/app/about-me/life-legacy/healthcare-wishes" },
+      { id: "financial-affairs", label: "Financial affairs & decision-maker", icon: "financial", href: "/app/about-me/life-legacy/financial-affairs" },
+      { id: "will-estate", label: "Will & estate reference", icon: "will", href: "/app/about-me/life-legacy/will-estate" },
     ],
   },
   {
@@ -61,10 +49,10 @@ const groups: LegacyGroup[] = [
     title: "Body & service",
     subtitle: "Disposition, donation, and ceremony",
     items: [
-      { id: "disposition", label: "Disposition preference", icon: Leaf },
-      { id: "organ-donation", label: "Organ & body donation", icon: Droplets },
-      { id: "service-ceremony", label: "Service & ceremony", icon: Flame },
-      { id: "music-readings", label: "Music, readings & elements", icon: Music },
+      { id: "disposition", label: "Disposition preference" },
+      { id: "organ-donation", label: "Organ & body donation" },
+      { id: "service-ceremony", label: "Service & ceremony" },
+      { id: "music-readings", label: "Music, readings & elements" },
     ],
   },
   {
@@ -72,9 +60,9 @@ const groups: LegacyGroup[] = [
     title: "People & instructions",
     subtitle: "Roles, belongings, and accounts",
     items: [
-      { id: "responsible-parties", label: "Responsible parties", icon: Users, isResponsibleParties: true },
-      { id: "belongings", label: "Belongings & instructions", icon: Gift },
-      { id: "digital-accounts", label: "Digital accounts & online presence", icon: Globe },
+      { id: "responsible-parties", label: "Responsible parties", icon: "decisions", isResponsibleParties: true },
+      { id: "belongings", label: "Belongings & instructions" },
+      { id: "digital-accounts", label: "Digital accounts & online presence" },
     ],
   },
   {
@@ -82,8 +70,8 @@ const groups: LegacyGroup[] = [
     title: "Messages & reflection",
     subtitle: "Letters, recordings, and life review",
     items: [
-      { id: "letters-messages", label: "Letters & messages to loved ones", icon: Mail },
-      { id: "life-reflections", label: "Life reflections", icon: Mic },
+      { id: "letters-messages", label: "Letters & messages to loved ones" },
+      { id: "life-reflections", label: "Life reflections" },
     ],
   },
 ];
@@ -111,7 +99,7 @@ function CardStatus({ item }: { item: LegacyItem }) {
             </div>
           ))}
         </div>
-        <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded whitespace-nowrap">
+        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded whitespace-nowrap">
           {responsibleParties.length} assigned
         </span>
       </div>
@@ -121,12 +109,9 @@ function CardStatus({ item }: { item: LegacyItem }) {
 }
 
 function ItemCard({ item }: { item: LegacyItem }) {
-  const Icon = item.icon;
   const inner = (
     <>
-      <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center mb-3 flex-shrink-0">
-        <Icon size={16} className="text-gray-500" />
-      </div>
+      <ItemBadge type="legacy" icon={item.icon} size="lg" className="mb-3" />
       <p className="text-sm leading-snug flex-1 mb-3">{item.label}</p>
       <div>
         <CardStatus item={item} />

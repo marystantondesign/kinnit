@@ -1,6 +1,13 @@
+import type { ItemIconKey } from "../config/itemTypes";
+
 export interface ReminderData {
   id: string;
   action: string;
+  /** Situation icon from config/itemTypes (call, text, card, gift) */
+  kind?: ItemIconKey<"reminder">;
+  /** Person the reminder is about */
+  personName?: string;
+  completed?: boolean;
   date: string;
   notes?: string;
   recurrence: string;

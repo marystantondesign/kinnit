@@ -1,9 +1,12 @@
+import type { ItemIconKey } from "../config/itemTypes";
 // Utility for managing occasion data in sessionStorage
 
 export interface OccasionData {
   id: string;
   title: string;
   type: string;
+  /** Situation icon from config/itemTypes (birthday, anniversary, ...) */
+  kind?: ItemIconKey<"occasion">;
   people: { id: string; name: string; initials?: string; role?: string }[];
   status: "draft" | "active";
   timing: {

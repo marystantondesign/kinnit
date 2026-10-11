@@ -2,6 +2,7 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 import { useState, useEffect } from "react";
 import { savePlan } from "../utils/planStorage";
 import { logActivity } from "../utils/notificationStore";
+import { planIconFor } from "../config/itemTypes";
 import { linkPlanToOccasion } from "../utils/linkingUtils";
 import { getAllCreatedOccasions } from "../utils/occasionStorage";
 
@@ -172,7 +173,7 @@ export function CreatePlan() {
     
     // Store the new plan data in sessionStorage
     savePlan(newPlanData);
-    logActivity("plan", `Created ${title}`);
+    logActivity({ type: "plan", icon: planIconFor(title) }, `Created ${title}`);
     
     // Add to the list of created plans
     const existingPlansJson = sessionStorage.getItem('created-plans');

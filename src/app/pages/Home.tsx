@@ -13,6 +13,15 @@ import {
 import { NewOccasionModal } from "./OccasionsIndex";
 import { NewPlanModal } from "./PlansIndex";
 import { useTalkToKinnit } from "../components/talk/TalkToKinnit";
+import { ItemBadge, ItemDot } from "../components/ItemBadge";
+import {
+  familyColors,
+  occasionIconFor,
+  planIconFor,
+  reminderIconFor,
+  type ItemFamily,
+  type ItemLook,
+} from "../config/itemTypes";
 import { DATA_CHANGED_EVENT } from "../utils/voiceActions";
 import {
   Dialog,
@@ -45,6 +54,9 @@ interface TimelineItem {
   subtext: string;
   date: Date;
   detailPath: string;
+  /** Situation icon key; inferred from the title/category when missing */
+  icon?: string;
+  completed?: boolean;
 }
 
 type CreationType = "occasion" | "plan" | "reminder";
@@ -54,7 +66,7 @@ interface AttentionItem {
   title: string;
   context: string;
   href: string;
-  dotClass: string;
+  type: ItemFamily;
 }
 
 interface PersonData {
@@ -84,7 +96,7 @@ type TypedResults =
 
 const BASE_TIMELINE_ITEMS: TimelineItem[] = [
   // Today's items (Oct 2, 2026) — matched to reference image
-  { id: "today1", type: "reminder", title: "Call Mom",                   subtext: "Care Reminder",      date: new Date(2026, 9,  2),  detailPath: "/app/reminders/6" },
+  { id: "today1", type: "reminder", title: "Call Mom",                   subtext: "Care Reminder",      date: new Date(2026, 9,  2),  detailPath: "/app/reminders/6", completed: true },
   { id: "today2", type: "plan",     title: "Lake House Weekend prep",     subtext: "Plan",               date: new Date(2026, 9,  2),  detailPath: "/app/plans/6"     },
   // Upcoming timeline items
   { id: "r1",     type: "reminder", title: "Send birthday card to Sarah", subtext: "Care Reminder",      date: new Date(2026, 9,  5),  detailPath: "/app/reminders/1" },
@@ -106,9 +118,9 @@ const RECENT_ACTIVITY = [
 ];
 
 const ATTENTION_ITEMS: AttentionItem[] = [
-  { id: "at1", title: "Send birthday card to Sarah",     context: "Due in 3 days",   href: "/app/reminders/1", dotClass: "bg-amber-400" },
-  { id: "at2", title: "David Martinez wants to connect", context: "Pending invite",  href: "/app/people",      dotClass: "bg-muted-foreground/60" },
-  { id: "at3", title: "Holiday Planning Kickoff",        context: "Missing details", href: "/app/plans/1",     dotClass: "bg-amber-400" },
+  { id: "at1", title: "Send birthday card to Sarah",     context: "Due in 3 days",   href: "/app/reminders/1", type: "reminder" },
+  { id: "at2", title: "David Martinez wants to connect", context: "Pending invite",  href: "/app/people",      type: "people"   },
+  { id: "at3", title: "Holiday Planning Kickoff",        context: "Missing details", href: "/app/plans/1",     type: "plan"     },
 ];
 
 // ─── Search data ──────────────────────────────────────────────────────────────
@@ -166,22 +178,11 @@ function getGreeting() {
   return "Good evening";
 }
 
-function dotBg(type: TimelineItem["type"]) {
-  if (type === "occasion") return "bg-blue-400";
-  if (type === "plan")     return "bg-green-500";
-  return                          "bg-amber-400";
-}
-
-function calDotBg(type: TimelineItem["type"]) {
-  if (type === "occasion") return "bg-blue-400";
-  if (type === "plan")     return "bg-green-500";
-  return                          "bg-amber-400";
-}
-
-function typeTag(type: TimelineItem["type"]) {
-  if (type === "reminder") return { label: "Reminder", style: "bg-amber-100 text-amber-700" };
-  if (type === "plan")     return { label: "Plan",     style: "bg-green-50 text-green-700"  };
-  return                          { label: "Occasion", style: "bg-blue-50 text-blue-600"    };
+/** Family + situation icon for a timeline item (see config/itemTypes). */
+function lookFor(item: TimelineItem): ItemLook {
+  if (item.type === "reminder") return { type: "reminder", icon: reminderIconFor(item.title, item.icon) };
+  if (item.type === "plan") return { type: "plan", icon: planIconFor(item.title, item.icon) };
+  return { type: "occasion", icon: occasionIconFor(item.subtext, item.title, item.icon) };
 }
 
 function fmt(date: Date) {
@@ -300,11 +301,7 @@ function typeLabel(type: SearchResult["type"]) {
 // ─── Search components ────────────────────────────────────────────────────────
 
 function ResultIcon({ type }: { type: SearchResult["type"] }) {
-  const cls = "flex-shrink-0 text-muted-foreground";
-  if (type === "occasion") return <Calendar size={14} className={cls} />;
-  if (type === "plan")     return <Flag     size={14} className={cls} />;
-  if (type === "reminder") return <Bell     size={14} className={cls} />;
-  return                          <User     size={14} className={cls} />;
+  return <ItemBadge type={type === "person" ? "people" : type} size="xs" />;
 }
 
 function SearchSectionLabel({ label }: { label: string }) {
@@ -434,30 +431,28 @@ function TodayCard({ items }: { items: TimelineItem[] }) {
   });
 
   return (
-    <div className="border border-amber-200 bg-amber-50 rounded-lg overflow-hidden mb-5 flex-shrink-0">
+    <div className="border border-border bg-card rounded-lg overflow-hidden mb-5 flex-shrink-0">
       {/* Header */}
       <div className="px-4 py-3">
-        <p className="text-sm font-semibold text-amber-700">Today · {todayLabel}</p>
+        <p className="text-sm font-semibold text-foreground">Today · {todayLabel}</p>
       </div>
 
       {/* Items */}
-      {items.map((item, i) => {
-        const tag = typeTag(item.type);
-        return (
-          <Link
-            key={item.id}
-            to={item.detailPath}
-            className={`flex items-center justify-between gap-3 px-4 py-3 hover:bg-amber-100/50 transition-colors ${
-              i > 0 ? "border-t border-amber-100" : "border-t border-amber-100"
-            }`}
-          >
-            <span className="text-sm text-foreground">{item.title}</span>
-            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 ${tag.style}`}>
-              {tag.label}
-            </span>
-          </Link>
-        );
-      })}
+      {items.map((item) => (
+        <Link
+          key={item.id}
+          to={item.detailPath}
+          className={`flex items-center gap-3 px-4 py-3 border-t border-border hover:bg-accent transition-colors ${
+            item.completed ? "opacity-60" : ""
+          }`}
+        >
+          <ItemBadge {...lookFor(item)} size="sm" />
+          <div className="min-w-0">
+            <p className="text-sm text-foreground truncate">{item.title}</p>
+            <p className="text-xs text-muted-foreground truncate">{item.subtext}</p>
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }
@@ -549,7 +544,7 @@ function MobileSearchRow({ onNewReminder }: { onNewReminder: () => void }) {
               onClick={() => setNewOpen(false)}
               className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent"
             >
-              <Calendar size={15} className="text-blue-500 flex-shrink-0" />
+              <ItemBadge type="occasion" size="xs" />
               New Occasion
             </Link>
             <Link
@@ -557,7 +552,7 @@ function MobileSearchRow({ onNewReminder }: { onNewReminder: () => void }) {
               onClick={() => setNewOpen(false)}
               className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent"
             >
-              <Flag size={15} className="text-green-500 flex-shrink-0" />
+              <ItemBadge type="plan" size="xs" />
               New Plan
             </Link>
             <button
@@ -565,7 +560,7 @@ function MobileSearchRow({ onNewReminder }: { onNewReminder: () => void }) {
               onClick={() => { setNewOpen(false); onNewReminder(); }}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent"
             >
-              <Bell size={15} className="text-amber-500 flex-shrink-0" />
+              <ItemBadge type="reminder" size="xs" />
               New Reminder
             </button>
           </div>
@@ -615,11 +610,11 @@ function NewButton({ onNewReminder }: { onNewReminder: () => void }) {
       {open && (
         <div className="absolute right-0 top-full mt-1 w-44 bg-card border border-border rounded shadow-md z-20 overflow-hidden">
           <Link to="/app/occasions/create" onClick={() => setOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent">
-            <Calendar size={15} className="text-blue-500 flex-shrink-0" />
+            <ItemBadge type="occasion" size="xs" />
             New Occasion
           </Link>
           <Link to="/app/plans/create" onClick={() => setOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent">
-            <Flag size={15} className="text-green-500 flex-shrink-0" />
+            <ItemBadge type="plan" size="xs" />
             New Plan
           </Link>
           <button
@@ -627,7 +622,7 @@ function NewButton({ onNewReminder }: { onNewReminder: () => void }) {
             onClick={() => { setOpen(false); onNewReminder(); }}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent"
           >
-            <Bell size={15} className="text-amber-500 flex-shrink-0" />
+            <ItemBadge type="reminder" size="xs" />
             New Reminder
           </button>
         </div>
@@ -659,7 +654,7 @@ function TimelineColumn({ items }: { items: TimelineItem[] }) {
 
         {upcomingItems.map((item) => (
           <div key={item.id} className="flex items-start gap-3">
-            <div className={`w-[10px] h-[10px] rounded-full flex-shrink-0 mt-2.5 z-10 ring-2 ring-background ${dotBg(item.type)}`} />
+            <ItemDot type={item.type} completed={item.completed} size={10} className="mt-2.5 z-10 ring-2 ring-background bg-background" />
             <Link
               to={item.detailPath}
               className="flex-1 border border-border rounded px-3 py-2 hover:bg-accent flex items-center justify-between gap-3 min-w-0 transition-colors"
@@ -701,7 +696,6 @@ function DayDetailItems({
   return (
     <>
       {items.map((item, i) => {
-        const tag = typeTag(item.type);
         return (
           <Link
             key={item.id}
@@ -711,14 +705,12 @@ function DayDetailItems({
               i > 0 ? "border-t border-border" : ""
             }`}
           >
-            <div className={`w-[3px] rounded-full flex-shrink-0 ${dotBg(item.type)}`} />
+            <div className="w-[3px] rounded-full flex-shrink-0" style={{ background: familyColors(item.type).dot }} />
             <div className="flex-1 min-w-0 py-0.5">
               <p className="text-sm font-medium text-foreground leading-snug">{item.title}</p>
               <p className="text-xs text-muted-foreground mt-0.5 truncate">{item.subtext}</p>
             </div>
-            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 self-center ${tag.style}`}>
-              {tag.label}
-            </span>
+            <ItemBadge {...lookFor(item)} size="sm" className="self-center" />
           </Link>
         );
       })}
@@ -728,9 +720,9 @@ function DayDetailItems({
 
 function DayAddActions({ onAdd }: { onAdd: (type: CreationType) => void }) {
   const actions = [
-    { type: "occasion" as const, label: "Occasion", icon: Calendar, iconClass: "text-blue-500" },
-    { type: "plan" as const, label: "Plan", icon: Flag, iconClass: "text-green-500" },
-    { type: "reminder" as const, label: "Reminder", icon: Bell, iconClass: "text-amber-500" },
+    { type: "occasion" as const, label: "Occasion" },
+    { type: "plan" as const, label: "Plan" },
+    { type: "reminder" as const, label: "Reminder" },
   ];
 
   return (
@@ -739,7 +731,7 @@ function DayAddActions({ onAdd }: { onAdd: (type: CreationType) => void }) {
         Add to this day
       </p>
       <div className="flex gap-2">
-        {actions.map(({ type, label, icon: Icon, iconClass }) => (
+        {actions.map(({ type, label }) => (
           <Button
             key={type}
             type="button"
@@ -748,7 +740,7 @@ function DayAddActions({ onAdd }: { onAdd: (type: CreationType) => void }) {
             onClick={() => onAdd(type)}
             className="flex-1 min-w-0 rounded-lg bg-card px-2 text-xs"
           >
-            <Icon size={14} className={iconClass} />
+            <ItemBadge type={type} size="xs" />
             {label}
           </Button>
         ))}
@@ -1016,7 +1008,7 @@ function MiniCalendar({
               {hasItems && (
                 <div className="flex gap-px mt-0.5">
                   {items.slice(0, 3).map((item, i) => (
-                    <div key={i} className={`w-1 h-1 rounded-full ${calDotBg(item.type)}`} />
+                    <ItemDot key={i} type={item.type} completed={item.completed} size={4} />
                   ))}
                 </div>
               )}
@@ -1092,7 +1084,7 @@ function AttentionColumn({ surveyRequestCount }: { surveyRequestCount: number })
             to={item.href}
             className="flex items-center gap-3 border border-border bg-card px-4 py-3.5 rounded-[var(--request-card-radius)] hover:bg-accent transition-colors"
           >
-            <div className={`size-2 rounded-full flex-shrink-0 ${item.dotClass}`} />
+            <ItemDot type={item.type} />
             <div className="min-w-0">
               <p className="text-sm text-foreground truncate">{item.title}</p>
               <p className="text-xs text-muted-foreground mt-0.5 truncate">{item.context}</p>

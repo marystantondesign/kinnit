@@ -1,8 +1,11 @@
+import type { ItemIconKey } from "../config/itemTypes";
 // Utility for managing plan data in sessionStorage
 
 export interface PlanData {
   id: string;
   title: string;
+  /** Situation icon from config/itemTypes (dinner, trip, ...) */
+  kind?: ItemIconKey<"plan">;
   description?: string;
   status: "draft" | "active";
   linkedOccasionIds: string[]; // Changed from linkedOccasion to support many-to-many

@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
 import { Bell, ChevronDown, ChevronRight, Clock, X } from "lucide-react";
-import { getEntityAppearance, reminderKind, type EntityKind } from "../../utils/entityAppearance";
+import { reminderIconFor, type ItemLook } from "../../config/itemTypes";
+import { ItemBadge } from "../ItemBadge";
 import {
   dismissActionItem,
   formatActionDate,
@@ -25,15 +26,6 @@ const DESKTOP_OVERHANG = 56;
 const GAP_BELOW_TOP_BAR = 8;
 
 // ─── Small pieces ─────────────────────────────────────────────────────────────
-
-function IconBadge({ kind }: { kind: EntityKind }) {
-  const { icon: Icon, bgClass, fgClass } = getEntityAppearance(kind);
-  return (
-    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${bgClass}`}>
-      <Icon size={14} className={fgClass} />
-    </div>
-  );
-}
 
 const primaryBtn =
   "h-8 px-3 rounded-lg bg-gray-900 text-white text-[13px] font-medium hover:bg-gray-800 transition-colors";
@@ -109,13 +101,13 @@ function SnoozeButton({ itemId }: { itemId: string }) {
 }
 
 function Row({
-  kind,
+  look,
   title,
   meta,
   actions,
   compact,
 }: {
-  kind: EntityKind;
+  look: ItemLook;
   title: ReactNode;
   meta: string;
   actions?: ReactNode;
@@ -123,7 +115,7 @@ function Row({
 }) {
   return (
     <li className={`flex gap-3 ${compact ? "py-3" : "py-3.5"} border-b border-gray-100 last:border-b-0`}>
-      <IconBadge kind={kind} />
+      <ItemBadge {...look} size="sm" />
       <div className="flex-1 min-w-0">
         <p className="text-[14px] leading-5 text-gray-900">{title}</p>
         <p className="text-[12px] leading-4 mt-0.5 text-gray-400">{meta}</p>
@@ -140,7 +132,7 @@ function ActionItemRow({ item, onNavigate }: { item: ActionItem; onNavigate: (to
     case "reminder":
       return (
         <Row
-          kind={reminderKind(item.title)}
+          look={{ type: "reminder", icon: reminderIconFor(item.title) }}
           title={item.title}
           meta={date}
           actions={<SnoozeButton itemId={item.id} />}
@@ -150,7 +142,7 @@ function ActionItemRow({ item, onNavigate }: { item: ActionItem; onNavigate: (to
     case "survey-request":
       return (
         <Row
-          kind="survey-request"
+          look={{ type: "request", icon: "fill-out" }}
           title={`${item.requesterName} requested your ${item.topic}`}
           meta={date}
           actions={
@@ -170,7 +162,7 @@ function ActionItemRow({ item, onNavigate }: { item: ActionItem; onNavigate: (to
       const who = item.requesterName ?? "A friend";
       return (
         <Row
-          kind="access-request"
+          look={{ type: "request", icon: "access" }}
           title={`${who} asked for access to ${item.surveyTitle}`}
           meta={date}
           actions={
@@ -180,7 +172,7 @@ function ActionItemRow({ item, onNavigate }: { item: ActionItem; onNavigate: (to
                 className={primaryBtn}
                 onClick={() => {
                   dismissActionItem(item.id);
-                  logActivity("about-me", `Shared ${item.surveyTitle} with ${item.requesterName ?? "a friend"}`);
+                  logActivity({ type: "people", icon: "share" }, `Shared ${item.surveyTitle} with ${item.requesterName ?? "a friend"}`);
                 }}
               >
                 {item.requesterName ? `Share with ${item.requesterName}` : "Share with them"}
@@ -197,7 +189,7 @@ function ActionItemRow({ item, onNavigate }: { item: ActionItem; onNavigate: (to
     case "plan-invitation":
       return (
         <Row
-          kind="plan-invitation"
+          look={{ type: "plan", icon: "invite" }}
           title={
             <>
               {item.inviterName} invited you to <span className="font-semibold">{item.planName}</span>
@@ -215,7 +207,7 @@ function ActionItemRow({ item, onNavigate }: { item: ActionItem; onNavigate: (to
 }
 
 function ActivityRow({ entry, now }: { entry: ActivityEntry; now: number }) {
-  return <Row compact kind={entry.appearance} title={entry.text} meta={formatRelativeTime(entry.at, now)} />;
+  return <Row compact look={entry.look} title={entry.text} meta={formatRelativeTime(entry.at, now)} />;
 }
 
 function FooterLink({ to, label, onClick }: { to: string; label: string; onClick: () => void }) {

@@ -1,5 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { reminderKind, type EntityKind } from "./entityAppearance";
+import { reminderIconFor, type ItemLook } from "../config/itemTypes";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -17,7 +17,7 @@ export type ActionItem =
 
 export interface ActivityEntry {
   id: string;
-  appearance: EntityKind;
+  look: ItemLook;
   text: string;
   /** ISO timestamp */
   at: string;
@@ -38,13 +38,36 @@ const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
 
 /** Seeded timeline, as offsets back from the first time the app loads. */
-const SEED_ACTIVITY: { appearance: EntityKind; text: string; ago: number }[] = [
-  { appearance: "plan",          text: "Created Hiking next weekend",        ago: 10 * MINUTE },
-  { appearance: "occasion",      text: "Added Sylvia's appointment",         ago: 12 * MINUTE },
-  { appearance: "private-note",  text: "Added a private note about Emily",   ago: DAY },
-  { appearance: "reminder-call", text: "Completed Call Mom",                 ago: DAY + 2 * 60 * MINUTE },
-  { appearance: "about-me",      text: "Updated your Gift Preferences",      ago: 2 * DAY },
+const SEED_ACTIVITY: { look: ItemLook; text: string; ago: number }[] = [
+  { look: { type: "plan", icon: "outdoors" },        text: "Created Hiking next weekend",      ago: 10 * MINUTE },
+  { look: { type: "occasion", icon: "appointment" }, text: "Added Sylvia's appointment",       ago: 12 * MINUTE },
+  { look: { type: "people", icon: "note" },          text: "Added a private note about Emily", ago: DAY },
+  { look: { type: "reminder", icon: "call" },        text: "Completed Call Mom",               ago: DAY + 2 * 60 * MINUTE },
+  { look: { type: "people", icon: "person" },        text: "Updated your Gift Preferences",    ago: 2 * DAY },
 ];
+
+/** Entries saved before the item-type config used named appearances. */
+const LEGACY_LOOKS: Record<string, ItemLook> = {
+  "plan": { type: "plan" },
+  "plan-invitation": { type: "plan", icon: "invite" },
+  "occasion": { type: "occasion" },
+  "reminder": { type: "reminder" },
+  "reminder-call": { type: "reminder", icon: "call" },
+  "private-note": { type: "people", icon: "note" },
+  "about-me": { type: "people", icon: "person" },
+  "survey-request": { type: "request", icon: "fill-out" },
+  "access-request": { type: "request", icon: "access" },
+};
+
+function migrate(s: StoredState): StoredState {
+  return {
+    ...s,
+    activity: s.activity.map((a) => {
+      const legacy = (a as ActivityEntry & { appearance?: string }).appearance;
+      return a.look ? a : { ...a, look: LEGACY_LOOKS[legacy ?? ""] ?? { type: "people" } };
+    }),
+  };
+}
 
 // ─── Persistence ──────────────────────────────────────────────────────────────
 
@@ -63,7 +86,7 @@ function seedState(): StoredState {
     snoozedUntil: {},
     activity: SEED_ACTIVITY.map((a, i) => ({
       id: `seed-${i}`,
-      appearance: a.appearance,
+      look: a.look,
       text: a.text,
       at: new Date(now - a.ago).toISOString(),
     })),
@@ -73,7 +96,7 @@ function seedState(): StoredState {
 function load(): StoredState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as StoredState;
+    if (raw) return migrate(JSON.parse(raw) as StoredState);
   } catch {}
   const seeded = seedState();
   save(seeded);
@@ -123,10 +146,10 @@ export function snoozeActionItem(id: string, option: SnoozeOption) {
 }
 
 /** Record something the user did, so it shows at the top of the Timeline tab. */
-export function logActivity(appearance: EntityKind, text: string) {
+export function logActivity(look: ItemLook, text: string) {
   const entry: ActivityEntry = {
     id: `a-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    appearance,
+    look,
     text,
     at: new Date().toISOString(),
   };
@@ -134,7 +157,7 @@ export function logActivity(appearance: EntityKind, text: string) {
 }
 
 export function logReminderActivity(verb: string, title: string) {
-  logActivity(reminderKind(title), `${verb} ${title}`);
+  logActivity({ type: "reminder", icon: reminderIconFor(title) }, `${verb} ${title}`);
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
