@@ -35,7 +35,7 @@ function EntryRow({ e, chevron = false, inline = false }: { e: DashboardEntry; c
   return (
     <Link
       to={e.href}
-      className={`flex items-center gap-2.5 ${inline ? "py-1" : "py-1.5"} rounded-lg -mx-2 px-2 hover:bg-black/[0.03] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+      className={`flex items-center gap-2.5 ${inline ? "py-0.5" : "py-1.5"} rounded-lg -mx-2 px-2 hover:bg-black/[0.03] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${
         e.completed ? "opacity-60" : ""
       }`}
     >
@@ -218,7 +218,7 @@ export function CalendarPanel({
                 type="button"
                 onClick={() => onAdd(type, selected)}
                 aria-label={`Add ${label.toLowerCase()} on ${fullDate(selected)}`}
-                className="h-7 px-2 rounded-md border border-gray-200 bg-white text-xs text-gray-800 inline-flex items-center gap-1 hover:bg-gray-50 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-6 px-2 rounded-md border border-gray-200 bg-white text-xs text-gray-800 inline-flex items-center gap-1 hover:bg-gray-50 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <ItemBadge type={type} size="xs" />
                 {label}
@@ -227,7 +227,7 @@ export function CalendarPanel({
           </div>
         </div>
         {dayItems.length ? (
-          <div className="divide-y divide-gray-100">
+          <div>
             {dayItems.map((e) => (
               <EntryRow key={`${e.family}-${e.id}`} e={e} chevron inline />
             ))}

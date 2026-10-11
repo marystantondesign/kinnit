@@ -50,7 +50,7 @@ export function CalendarGrid({
   const monthStart = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
   const monthRows = Math.ceil((monthStart.getDay() + new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate()) / 7);
   // Week view takes the same height as the month it sits in.
-  const footprint = compact ? 16 + monthRows * 33 : undefined;
+  const footprint = compact ? 14 + monthRows * 37 : undefined;
   const heading =
     mode === "month"
       ? cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" })
@@ -72,12 +72,12 @@ export function CalendarGrid({
         aria-label={day.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
         aria-pressed={isSelected}
         tabIndex={inMonth ? 0 : -1}
-        className={`relative z-10 flex flex-col items-center ${compact ? "gap-px py-0" : "gap-1 py-1.5"} rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+        className={`relative z-10 flex flex-col items-center ${compact ? "gap-0.5 pb-[5px]" : "gap-1 py-1.5"} rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring ${
           inMonth ? "" : "invisible"
         }`}
       >
         <span
-          className={`${compact ? "size-7 text-[13px]" : "size-9 text-sm"} rounded-full flex items-center justify-center transition-colors ${
+          className={`${compact ? "size-[26px] text-[13px]" : "size-9 text-sm"} rounded-full flex items-center justify-center transition-colors ${
             isToday ? "bg-gray-900 text-white font-semibold" : "text-gray-900 hover:bg-gray-100"
           }`}
           style={isSelected && !isToday ? { boxShadow: `inset 0 0 0 1.5px ${ring}` } : undefined}
@@ -106,7 +106,7 @@ export function CalendarGrid({
         <span
           key={`${item.family}-${item.id}-${rowStart.toISOString()}`}
           aria-hidden
-          className="absolute top-0.5 bottom-0.5 rounded-xl"
+          className={compact ? "absolute top-0 h-[26px] rounded-full" : "absolute top-0.5 bottom-0.5 rounded-xl"}
           style={{
             left: `${(from / 7) * 100}%`,
             width: `${((to - from + 1) / 7) * 100}%`,
@@ -123,7 +123,7 @@ export function CalendarGrid({
     const rows = Math.ceil((first.getDay() + lastDay.getDate()) / 7);
     return (
       <div>
-        <div className={`grid grid-cols-7 text-center ${compact ? "text-[11px]" : "text-xs mb-1"} text-gray-400`}>
+        <div className={`grid grid-cols-7 text-center ${compact ? "text-[11px] leading-[14px]" : "text-xs mb-1"} text-gray-400`}>
           {WEEKDAYS.map((d, i) => (
             <span key={i}>{d}</span>
           ))}

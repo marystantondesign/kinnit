@@ -168,7 +168,7 @@ export function DiscoveryCard() {
             </div>
             <div
               key={`art-${current.id}`}
-              className="order-1 sm:order-2 h-[120px] sm:h-auto sm:min-h-[84px] m-3 sm:my-2 sm:ml-0 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300"
+              className="order-1 sm:order-2 h-[120px] sm:h-auto sm:min-h-[74px] m-3 sm:my-2 sm:ml-0 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300"
             >
               <DiscoveryCollage topic={current.topic} />
             </div>
