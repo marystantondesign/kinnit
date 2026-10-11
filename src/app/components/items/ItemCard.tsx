@@ -69,7 +69,7 @@ export function ItemCard({ look, title, meta, linked, people = [], href, recurri
     </>
   );
 
-  const className = `flex items-center gap-3 min-h-[76px] py-3 px-[14px] rounded-xl border border-gray-200 bg-white transition-colors ${
+  const className = `flex items-center gap-3 min-h-[76px] py-3 px-[14px] rounded-[12px] border border-gray-200 bg-white transition-colors ${
     done ? "opacity-60" : ""
   } ${href ? "hover:bg-gray-50" : ""}`;
 
