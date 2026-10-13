@@ -147,3 +147,4 @@
 
 # Store PNGs as regular git blobs (small files; LFS uploads unavailable from Claude Code cloud sessions)
 *.png -filter binary
+*.ico -filter binary

@@ -1,10 +1,8 @@
 {
+  "title": "Kinnit",
   "description": "A private space for you and your closest people to share what matters, remember each other deeply, and show up with care in every moment.",
   "robots": {
     "index": false
-  },
-  "icons": {
-    "icon": "/.figma/make/favicon.png"
   },
   "openGraph": {
     "image": "/.figma/make/social-image.png"
